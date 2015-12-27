@@ -1455,9 +1455,10 @@ void process_commands()
       #endif //FWRETRACT
     case 28: //G28 Home all Axis one at a time
 #ifdef ENABLE_AUTO_BED_LEVELING
-      plan_bed_level_matrix.set_to_identity();  //Reset the plane ("erase" all leveling data)
+	  #ifndef SAVE_G29_CORRECTION_MATRIX
+	  plan_bed_level_matrix.set_to_identity(); //Reset the plane ("erase" all leveling data)
+	  #endif
 #endif //ENABLE_AUTO_BED_LEVELING
-
       //set endstop switch trigger period to less
       endstop_trig_period = HOME_PROBE_ENDSTOP_PERIOD;
 
@@ -1695,7 +1696,10 @@ void process_commands()
             #if Z_MIN_PIN == -1
             #error "You must have a Z_MIN endstop in order to enable Auto Bed Leveling feature!!! Z_MIN_PIN must point to a valid hardware pin."
             #endif
-            
+			
+#ifdef SAVE_G29_CORRECTION_MATRIX
+			plan_bed_level_matrix.set_to_identity();  //Reset the plane ("erase" all leveling data)
+#endif
             //set endstop switch trigger period to less
             endstop_trig_period = HOME_PROBE_ENDSTOP_PERIOD;
 

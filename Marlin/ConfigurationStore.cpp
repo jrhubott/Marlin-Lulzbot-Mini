@@ -58,6 +58,9 @@ void Config_StoreSettings()
   EEPROM_WRITE_VAR(i,max_z_jerk);
   EEPROM_WRITE_VAR(i,max_e_jerk);
   EEPROM_WRITE_VAR(i,add_homing);
+  #ifdef SAVE_G29_CORRECTION_MATRIX
+  EEPROM_WRITE_VAR(i,plan_bed_level_matrix);
+  #endif
   #ifdef DELTA
   EEPROM_WRITE_VAR(i,endstop_adj);
   EEPROM_WRITE_VAR(i,delta_radius);
@@ -138,6 +141,11 @@ void Config_PrintSettings()
     SERIAL_ECHOPAIR(" Z",axis_steps_per_unit[Z_AXIS]);
     SERIAL_ECHOPAIR(" E",axis_steps_per_unit[E_AXIS]);
     SERIAL_ECHOLN("");
+#ifdef SAVE_G29_CORRECTION_MATRIX
+    SERIAL_ECHO_START;
+    plan_bed_level_matrix.debug("\n\nBed Level Correction Matrix:");
+    SERIAL_ECHOLN("");
+#endif
       
     SERIAL_ECHO_START;
 #ifdef SCARA
@@ -296,6 +304,9 @@ void Config_RetrieveSettings()
         EEPROM_READ_VAR(i,max_z_jerk);
         EEPROM_READ_VAR(i,max_e_jerk);
         EEPROM_READ_VAR(i,add_homing);
+		#ifdef SAVE_G29_CORRECTION_MATRIX
+        EEPROM_READ_VAR(i,plan_bed_level_matrix);
+		#endif
         #ifdef DELTA
 		EEPROM_READ_VAR(i,endstop_adj);
 		EEPROM_READ_VAR(i,delta_radius);
@@ -394,6 +405,9 @@ void Config_ResetDefault()
     max_z_jerk=DEFAULT_ZJERK;
     max_e_jerk=DEFAULT_EJERK;
     add_homing[X_AXIS] = add_homing[Y_AXIS] = add_homing[Z_AXIS] = 0;
+	#ifdef SAVE_G29_CORRECTION_MATRIX
+    plan_bed_level_matrix.set_to_identity();
+	#endif
 #ifdef DELTA
 	endstop_adj[X_AXIS] = endstop_adj[Y_AXIS] = endstop_adj[Z_AXIS] = 0;
 	delta_radius= DELTA_RADIUS;

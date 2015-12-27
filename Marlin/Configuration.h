@@ -358,6 +358,7 @@ const bool Z_MAX_ENDSTOP_INVERTING = true; // set to true to invert the logic of
 
 #define ENABLE_AUTO_BED_LEVELING // Delete the comment to enable (remove // at the start of the line)
 //#define Z_PROBE_REPEATABILITY_TEST  // If not commented out, Z-Probe Repeatability test will be included if Auto Bed Leveling is Enabled.
+#define SAVE_G29_CORRECTION_MATRIX  // if not commented out and the EEPROM is used to save settings, the G29 information will also be saved.
 
 #ifdef ENABLE_AUTO_BED_LEVELING
 
