@@ -58,38 +58,49 @@
 #define TEMP_SENSOR_AD595_OFFSET 0.0
 #define TEMP_SENSOR_AD595_GAIN   1.0
 
-//This is for controlling a fan to cool down the stepper drivers
+//This is for case a fan to cool down the electronics it will turn on after setup is complete.
 //it will turn on when any driver is enabled
 //and turn off after the set amount of seconds from last driver being disabled again
-#define CONTROLLERFAN_PIN FAN2_PIN //Pin used for the fan to cool controller (-1 to disable)
-#define CONTROLLERFAN_SECS 60 //How many seconds, after all motors were disabled, the fan should run
-#define CONTROLLERFAN_SPEED_START 255 //Startup fan speed
-#define CONTROLLERFAN_SPEED_FULL 130  // == full speed
-#define CONTROLLERFAN_SPEED_IDLE 60 //Idle speed when motors are inactive
-#define CONTROLLERFAN_SPEED_MAX 255 // Max limit for fan 
-#define CONTROLLERFAN_SPEED_MIN 0  //Minimum that fan will start without push
-
+#define CASEFAN_PIN FAN3_PIN //Pin used for the fan to cool controller (-1 to disable)
+#define CASEFAN_SECS 60 //How many seconds, after all motors were disabled, the fan should run before going back to idle speed.
+#define CASEFAN_SPEED_FULL 130  // Full speed for when motor are active
+#define CASEFAN_SPEED_START 255 // Startup case fan speed
+#define CASEFAN_SPEED_IDLE 0  	// Idle speed for when the motor have been inactive	
+#define CASEFAN_SPEED_MAX 255  	// Maximum limit for the fan speed so it does not burn out. Use 128 for 12v fans with 24V Power Supplies
+#define CASEFAN_SPEED_MIN 0	// Minimum limit for the fan speed where it will start to spin from a stop without a push.
 
 // When first starting the main fan, run it at full speed for the
 // given number of milliseconds.  This gets the fan spinning reliably
 // before setting a PWM value. (Does not work with software PWM for fan on Sanguinololu)
-#define FAN_KICKSTART_TIME 1000
+#define FAN_KICKSTART_TIME 100
 
-// Extruder cooling fans
-// Configure fan pin outputs to automatically turn on/off when the associated
-// extruder temperature is above/below EXTRUDER_AUTO_FAN_TEMPERATURE.
-// Multiple extruders can be assigned to the same pin in which case
-// the fan will turn on when any selected extruder is above the threshold.
-#define EXTRUDER_0_AUTO_FAN_PIN   FAN1_PIN
-#define EXTRUDER_1_AUTO_FAN_PIN   -1
-#define EXTRUDER_2_AUTO_FAN_PIN   -1
-#define EXTRUDER_AUTO_FAN_TEMPERATURE 50
-#define EXTRUDER_AUTO_FAN_SPEED   255  // == full speed
 
+// Extruder Fan Setup 
+// If set to -1 all Extruder fans will be disabled
+// If set to  1 only EX_FAN_0 will be used as a nozzle cooling fan for Extruder0
+// If set to  2 EX_FAN_0 and EX_FAN_1 will be used as nozzle cooling fan and will switch between active nozzles
+// If set to  3 EX_FAN_0 will be Contorled by M106 S255 and EX_FAN_1 will be controled by M106 P1 S255
+// If set to  4 EX_FAN_0 will be used as a nozzle cooling fan and EX_FAN_1 will be used as a heat sink fan
+#define EXTRUDER_FAN_SETUP 1
+#define EX_FAN_0 FAN_PIN
+#define EX_FAN_1 FAN1_PIN
+
+#if defined(EXTRUDER_FAN_SETUP) && EXTRUDER_FAN_SETUP == 4
+    // Extruder cooling fans
+    // Configure fan pin outputs to automatically turn on/off when the associated
+    // extruder temperature is above/below EXTRUDER_AUTO_FAN_TEMPERATURE.
+    // Multiple extruders can be assigned to the same pin in which case 
+    // the fan will turn on when any selected extruder is above the threshold.
+    #define EXTRUDER_0_AUTO_FAN_PIN   EX_FAN_1
+    #define EXTRUDER_1_AUTO_FAN_PIN   EX_FAN_1
+    #define EXTRUDER_2_AUTO_FAN_PIN   -1
+    #define EXTRUDER_AUTO_FAN_TEMPERATURE 50
+    #define EXTRUDER_AUTO_FAN_SPEED   255  // == full speed
+#endif
 
 //===========================================================================
 //=============================Mechanical Settings===========================
-//===========================================================================
+//===========================================================================100
 
 //#define ENDSTOPS_ONLY_FOR_HOMING // If defined the endstops will only be used for homing
 
@@ -224,11 +235,9 @@
 #define QUICK_HOME  //if this is defined, if both x and y are to be homed, a diagonal move will be performed initially.
 
 #define AXIS_RELATIVE_MODES {false, false, false, false}
-#ifdef CONFIG_STEPPERS_TOSHIBA
-#define MAX_STEP_FREQUENCY 10000 // Max step frequency for Toshiba Stepper Controllers
-#else
-#define MAX_STEP_FREQUENCY 40000 // Max step frequency for LulzBot Mini
-#endif
+
+#define MAX_STEP_FREQUENCY 40000 // Max step frequency for Ultimaker (5000 pps / half step)
+
 //By default pololu step drivers require an active high signal. However, some high power drivers require an active low signal as step.
 #define INVERT_X_STEP_PIN false
 #define INVERT_Y_STEP_PIN false
@@ -302,20 +311,6 @@
 // using:
 //#define MENU_ADDAUTOSTART
 
-// Show a progress bar on the LCD when printing from SD?
-//#define LCD_PROGRESS_BAR
-
-#ifdef LCD_PROGRESS_BAR
-  // Amount of time (ms) to show the bar
-  #define PROGRESS_BAR_BAR_TIME 2000
-  // Amount of time (ms) to show the status message
-  #define PROGRESS_BAR_MSG_TIME 3000
-  // Amount of time (ms) to retain the status message (0=forever)
-  #define PROGRESS_MSG_EXPIRE   0
-  // Enable this to show messages for MSG_TIME then hide them
-  //#define PROGRESS_MSG_ONCE
-#endif
-
 // The hardware watchdog should reset the microcontroller disabling all outputs, in case the firmware gets stuck and doesn't do temperature regulation.
 //#define USE_WATCHDOG
 
@@ -351,7 +346,7 @@
 
 // extruder advance constant (s2/mm3)
 //
-// advance (steps) = STEPS_PER_CUBIC_MM_E * EXTRUDER_ADVANCE_K * cubic mm per second ^ 2
+// advance (steps) = STEPS_PER_CUBIC_MM_E * EXTUDER_ADVANCE_K * cubic mm per second ^ 2
 //
 // Hooke's law says:		force = k * distance
 // Bernoulli's principle says:	v ^ 2 / 2 + g . h + pressure / density = constant
@@ -363,8 +358,8 @@
 
   #define D_FILAMENT 2.85
   #define STEPS_MM_E 836
-  #define EXTRUSION_AREA (0.25 * D_FILAMENT * D_FILAMENT * 3.14159)
-  #define STEPS_PER_CUBIC_MM_E (axis_steps_per_unit[E_AXIS]/ EXTRUSION_AREA)
+  #define EXTRUTION_AREA (0.25 * D_FILAMENT * D_FILAMENT * 3.14159)
+  #define STEPS_PER_CUBIC_MM_E (axis_steps_per_unit[E_AXIS]/ EXTRUTION_AREA)
 
 #endif // ADVANCE
 
@@ -431,11 +426,9 @@ const unsigned int dropsegments=5; //everything with less than this number of st
 #ifdef FWRETRACT
   #define MIN_RETRACT 0.1                //minimum extruded mm to accept a automatic gcode retraction attempt
   #define RETRACT_LENGTH 3               //default retract length (positive mm)
-  #define RETRACT_LENGTH_SWAP 13         //default swap retract length (positive mm), for extruder change
   #define RETRACT_FEEDRATE 45            //default feedrate for retracting (mm/s)
   #define RETRACT_ZLIFT 0                //default retract Z-lift
   #define RETRACT_RECOVER_LENGTH 0       //default additional recover length (mm, added to retract length when recovering)
-  #define RETRACT_RECOVER_LENGTH_SWAP 0  //default additional swap recover length (mm, added to retract length when recovering from extruder change)
   #define RETRACT_RECOVER_FEEDRATE 8     //default feedrate for recovering from retraction (mm/s)
 #endif
 
@@ -460,11 +453,6 @@ const unsigned int dropsegments=5; //everything with less than this number of st
 //===========================================================================
 //=============================  Define Defines  ============================
 //===========================================================================
-
-#if defined (ENABLE_AUTO_BED_LEVELING) && defined (DELTA)
-  #error "Bed Auto Leveling is still not compatible with Delta Kinematics."
-#endif
-
 #if EXTRUDERS > 1 && defined TEMP_SENSOR_1_AS_REDUNDANT
   #error "You cannot use TEMP_SENSOR_1_AS_REDUNDANT if EXTRUDERS > 1"
 #endif

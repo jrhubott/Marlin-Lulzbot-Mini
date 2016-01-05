@@ -39,9 +39,10 @@
 #include "ultralcd.h"
 #include "ultralcd_st7920_u8glib_rrd.h"
 
+
 /* Russian language not supported yet, needs custom font
 
-#ifdef LANGUAGE_RU
+#if LANGUAGE_CHOICE == 6
 #include "LiquidCrystalRus.h"
 #define LCD_CLASS LiquidCrystalRus
 #else
@@ -56,18 +57,20 @@
 #define DOG_CHAR_WIDTH_LARGE	9
 #define DOG_CHAR_HEIGHT_LARGE	18
 
+
 #define START_ROW				0
 
+
 /* Custom characters defined in font font_6x10_marlin.c */
+#define LCD_STR_BEDTEMP     "\xFE"
 #define LCD_STR_DEGREE      "\xB0"
+#define LCD_STR_THERMOMETER "\xFF"
+#define LCD_STR_UPLEVEL     "\xFB"
 #define LCD_STR_REFRESH     "\xF8"
 #define LCD_STR_FOLDER      "\xF9"
-#define LCD_STR_ARROW_RIGHT "\xFA"
-#define LCD_STR_UPLEVEL     "\xFB"
-#define LCD_STR_CLOCK       "\xFC"
 #define LCD_STR_FEEDRATE    "\xFD"
-#define LCD_STR_BEDTEMP     "\xFE"
-#define LCD_STR_THERMOMETER "\xFF"
+#define LCD_STR_CLOCK       "\xFC"
+#define LCD_STR_ARROW_RIGHT "\xFA"
 
 #define FONT_STATUSMENU	u8g_font_6x9
 
@@ -126,7 +129,7 @@ static void lcd_implementation_init()
 			u8g.setFont(u8g_font_6x10_marlin);
 			u8g.drawStr(62,10,"MARLIN"); 
 			u8g.setFont(u8g_font_5x8);
-			u8g.drawStr(62,19,"V1.0.2");
+			u8g.drawStr(62,19,"V1.0.0 RC2-mm");
 			u8g.setFont(u8g_font_6x10_marlin);
 			u8g.drawStr(62,28,"by ErikZalm");
 			u8g.drawStr(62,41,"DOGM128 LCD");
@@ -164,25 +167,6 @@ static void lcd_printPGM(const char* str)
     }
 }
 
-static void _draw_heater_status(int x, int heater) {
-  bool isBed = heater < 0;
-  int y = 17 + (isBed ? 1 : 0);
-  u8g.setFont(FONT_STATUSMENU);
-  u8g.setPrintPos(x,6);
-  u8g.print(itostr3(int((heater >= 0 ? degTargetHotend(heater) : degTargetBed()) + 0.5)));
-  lcd_printPGM(PSTR(LCD_STR_DEGREE " "));
-  u8g.setPrintPos(x,27);
-  u8g.print(itostr3(int(heater >= 0 ? degHotend(heater) : degBed()) + 0.5));
-  lcd_printPGM(PSTR(LCD_STR_DEGREE " "));
-  if (!isHeatingHotend(0)) {
-    u8g.drawBox(x+7,y,2,2);
-  }
-  else {
-    u8g.setColorIndex(0); // white on black
-    u8g.drawBox(x+7,y,2,2);
-    u8g.setColorIndex(1); // black on white
-  }
-}
 
 static void lcd_implementation_status_screen()
 {
@@ -192,7 +176,8 @@ static void lcd_implementation_status_screen()
  u8g.setColorIndex(1);	// black on white
  
  // Symbols menu graphics, animated fan
- u8g.drawBitmapP(9,1,STATUS_SCREENBYTEWIDTH,STATUS_SCREENHEIGHT, (blink % 2) && fanSpeed ? status_screen0_bmp : status_screen1_bmp);
+ if ((blink % 2) &&  fanSpeed )	u8g.drawBitmapP(9,1,STATUS_SCREENBYTEWIDTH,STATUS_SCREENHEIGHT,status_screen0_bmp);
+	else u8g.drawBitmapP(9,1,STATUS_SCREENBYTEWIDTH,STATUS_SCREENHEIGHT,status_screen1_bmp);
  
  #ifdef SDSUPPORT
  //SD Card Symbol
@@ -228,17 +213,79 @@ static void lcd_implementation_status_screen()
 		 }
  #endif
  
-  // Extruders
-  _draw_heater_status(6, 0);
-  #if EXTRUDERS > 1
-    _draw_heater_status(31, 1);
-    #if EXTRUDERS > 2
-      _draw_heater_status(55, 2);
-    #endif
-  #endif
-
-  // Heatbed
-  _draw_heater_status(81, -1);
+ // Extruder 1
+ u8g.setFont(FONT_STATUSMENU);
+ u8g.setPrintPos(6,6);
+ u8g.print(itostr3(int(degTargetHotend(0) + 0.5)));
+ lcd_printPGM(PSTR(LCD_STR_DEGREE " "));
+ u8g.setPrintPos(6,27);
+ u8g.print(itostr3(int(degHotend(0) + 0.5)));
+ lcd_printPGM(PSTR(LCD_STR_DEGREE " "));
+ if (!isHeatingHotend(0)) u8g.drawBox(13,17,2,2);
+	else
+		{
+		 u8g.setColorIndex(0);	// white on black
+		 u8g.drawBox(13,17,2,2);
+		 u8g.setColorIndex(1);	// black on white
+		}
+ 
+ // Extruder 2
+ u8g.setFont(FONT_STATUSMENU);
+ #if EXTRUDERS > 1
+ u8g.setPrintPos(31,6);
+ u8g.print(itostr3(int(degTargetHotend(1) + 0.5)));
+ lcd_printPGM(PSTR(LCD_STR_DEGREE " "));
+ u8g.setPrintPos(31,27);
+ u8g.print(itostr3(int(degHotend(1) + 0.5)));
+ lcd_printPGM(PSTR(LCD_STR_DEGREE " "));
+ if (!isHeatingHotend(1)) u8g.drawBox(38,17,2,2);
+	else
+		{
+		 u8g.setColorIndex(0);	// white on black
+		 u8g.drawBox(38,17,2,2);
+		 u8g.setColorIndex(1);	// black on white
+		}
+ #else
+ u8g.setPrintPos(31,27);
+ u8g.print("---");
+ #endif
+ 
+ // Extruder 3
+ u8g.setFont(FONT_STATUSMENU);
+ # if EXTRUDERS > 2
+ u8g.setPrintPos(55,6);
+ u8g.print(itostr3(int(degTargetHotend(2) + 0.5)));
+ lcd_printPGM(PSTR(LCD_STR_DEGREE " "));
+ u8g.setPrintPos(55,27);
+ u8g.print(itostr3(int(degHotend(2) + 0.5)));
+ lcd_printPGM(PSTR(LCD_STR_DEGREE " "));
+ if (!isHeatingHotend(2)) u8g.drawBox(62,17,2,2);
+	else
+		{
+		 u8g.setColorIndex(0);	// white on black
+		 u8g.drawBox(62,17,2,2);
+		 u8g.setColorIndex(1);	// black on white
+		}
+ #else
+ u8g.setPrintPos(55,27);
+ u8g.print("---");
+ #endif
+ 
+ // Heatbed
+ u8g.setFont(FONT_STATUSMENU);
+ u8g.setPrintPos(81,6);
+ u8g.print(itostr3(int(degTargetBed() + 0.5)));
+ lcd_printPGM(PSTR(LCD_STR_DEGREE " "));
+ u8g.setPrintPos(81,27);
+ u8g.print(itostr3(int(degBed() + 0.5)));
+ lcd_printPGM(PSTR(LCD_STR_DEGREE " "));
+ if (!isHeatingBed()) u8g.drawBox(88,18,2,2);
+	else
+		{
+		 u8g.setColorIndex(0);	// white on black
+		 u8g.drawBox(88,18,2,2);
+		 u8g.setColorIndex(1);	// black on white
+		}
  
  // Fan
  u8g.setFont(FONT_STATUSMENU);
@@ -287,21 +334,7 @@ static void lcd_implementation_status_screen()
  // Status line
  u8g.setFont(FONT_STATUSMENU);
  u8g.setPrintPos(0,61);
- #ifndef FILAMENT_LCD_DISPLAY
- 	u8g.print(lcd_status_message);
- #else
-	if(message_millis+5000>millis()){  //Display both Status message line and Filament display on the last line
-	 u8g.print(lcd_status_message);
- 	}
- 	else
-	{
-	 lcd_printPGM(PSTR("dia:"));
-	 u8g.print(ftostr12ns(filament_width_meas));
-	 lcd_printPGM(PSTR(" factor:"));
-	 u8g.print(itostr3(extrudemultiply));
-	 u8g.print('%');
-	}
- #endif 	
+ u8g.print(lcd_status_message);
 
 }
 
@@ -319,7 +352,7 @@ static void lcd_implementation_drawmenu_generic(uint8_t row, const char* pstr, c
 		   } else u8g.setColorIndex(1); // unmarked text is black on white
 		
 		u8g.setPrintPos(0 * DOG_CHAR_WIDTH, (row + 1) * DOG_CHAR_HEIGHT);
-		u8g.print(pre_char == '>' ? ' ' : pre_char);	// Row selector is obsolete
+		if (pre_char != '>') u8g.print(pre_char); else u8g.print(' ');	// Row selector is obsolete
 
 
     while( (c = pgm_read_byte(pstr)) != '\0' )
@@ -337,28 +370,56 @@ static void lcd_implementation_drawmenu_generic(uint8_t row, const char* pstr, c
 		u8g.setColorIndex(1);		// restore settings to black on white
 }
 
-static void _drawmenu_setting_edit_generic(uint8_t row, const char* pstr, char pre_char, const char* data, bool pgm) {
-  char c;
-  uint8_t n = LCD_WIDTH - 1 - 2 - (pgm ? strlen_P(data) : strlen(data));
+static void lcd_implementation_drawmenu_setting_edit_generic(uint8_t row, const char* pstr, char pre_char, char* data)
+{
+    static unsigned int fkt_cnt = 0;
+	char c;
+    uint8_t n = LCD_WIDTH - 1 - 2 - strlen(data);
 		
-  u8g.setPrintPos(0 * DOG_CHAR_WIDTH, (row + 1) * DOG_CHAR_HEIGHT);
-  u8g.print(pre_char);
+		u8g.setPrintPos(0 * DOG_CHAR_WIDTH, (row + 1) * DOG_CHAR_HEIGHT);
+		u8g.print(pre_char);
+	
+    while( (c = pgm_read_byte(pstr)) != '\0' )
+    {
+			u8g.print(c);
+		
+        pstr++;
+        n--;
+    }
+	
+		u8g.print(':');
 
-  while( (c = pgm_read_byte(pstr)) != '\0' ) {
-    u8g.print(c);
-    pstr++;
-    n--;
-  }
+    while(n--){
+					u8g.print(' ');
+			  }
 
-  u8g.print(':');
-
-  while(n--) u8g.print(' ');
-
-  if (pgm) { lcd_printPGM(data); } else { u8g.print(data); }
+		u8g.print(data);
 }
 
-#define lcd_implementation_drawmenu_setting_edit_generic(row, pstr, pre_char, data) _drawmenu_setting_edit_generic(row, pstr, pre_char, data, false)
-#define lcd_implementation_drawmenu_setting_edit_generic_P(row, pstr, pre_char, data) _drawmenu_setting_edit_generic(row, pstr, pre_char, data, true)
+static void lcd_implementation_drawmenu_setting_edit_generic_P(uint8_t row, const char* pstr, char pre_char, const char* data)
+{
+    char c;
+    uint8_t n= LCD_WIDTH - 1 - 2 - strlen_P(data);
+
+		u8g.setPrintPos(0 * DOG_CHAR_WIDTH, (row + 1) * DOG_CHAR_HEIGHT);
+		u8g.print(pre_char);
+	
+    while( (c = pgm_read_byte(pstr)) != '\0' )
+    {
+			u8g.print(c);
+		
+        pstr++;
+        n--;
+    }
+
+		u8g.print(':');
+	
+    while(n--){
+					u8g.print(' ');
+			  }
+
+		lcd_printPGM(data);
+}
 
 #define lcd_implementation_drawmenu_setting_edit_int3_selected(row, pstr, pstr2, data, minValue, maxValue) lcd_implementation_drawmenu_setting_edit_generic(row, pstr, '>', itostr3(*(data)))
 #define lcd_implementation_drawmenu_setting_edit_int3(row, pstr, pstr2, data, minValue, maxValue) lcd_implementation_drawmenu_setting_edit_generic(row, pstr, ' ', itostr3(*(data)))
@@ -366,8 +427,6 @@ static void _drawmenu_setting_edit_generic(uint8_t row, const char* pstr, char p
 #define lcd_implementation_drawmenu_setting_edit_float3(row, pstr, pstr2, data, minValue, maxValue) lcd_implementation_drawmenu_setting_edit_generic(row, pstr, ' ', ftostr3(*(data)))
 #define lcd_implementation_drawmenu_setting_edit_float32_selected(row, pstr, pstr2, data, minValue, maxValue) lcd_implementation_drawmenu_setting_edit_generic(row, pstr, '>', ftostr32(*(data)))
 #define lcd_implementation_drawmenu_setting_edit_float32(row, pstr, pstr2, data, minValue, maxValue) lcd_implementation_drawmenu_setting_edit_generic(row, pstr, ' ', ftostr32(*(data)))
-#define lcd_implementation_drawmenu_setting_edit_float43_selected(row, pstr, pstr2, data, minValue, maxValue) lcd_implementation_drawmenu_setting_edit_generic(row, pstr, '>', ftostr43(*(data)))
-#define lcd_implementation_drawmenu_setting_edit_float43(row, pstr, pstr2, data, minValue, maxValue) lcd_implementation_drawmenu_setting_edit_generic(row, pstr, ' ', ftostr43(*(data)))
 #define lcd_implementation_drawmenu_setting_edit_float5_selected(row, pstr, pstr2, data, minValue, maxValue) lcd_implementation_drawmenu_setting_edit_generic(row, pstr, '>', ftostr5(*(data)))
 #define lcd_implementation_drawmenu_setting_edit_float5(row, pstr, pstr2, data, minValue, maxValue) lcd_implementation_drawmenu_setting_edit_generic(row, pstr, ' ', ftostr5(*(data)))
 #define lcd_implementation_drawmenu_setting_edit_float52_selected(row, pstr, pstr2, data, minValue, maxValue) lcd_implementation_drawmenu_setting_edit_generic(row, pstr, '>', ftostr52(*(data)))
@@ -386,8 +445,6 @@ static void _drawmenu_setting_edit_generic(uint8_t row, const char* pstr, char p
 #define lcd_implementation_drawmenu_setting_edit_callback_float3(row, pstr, pstr2, data, minValue, maxValue, callback) lcd_implementation_drawmenu_setting_edit_generic(row, pstr, ' ', ftostr3(*(data)))
 #define lcd_implementation_drawmenu_setting_edit_callback_float32_selected(row, pstr, pstr2, data, minValue, maxValue, callback) lcd_implementation_drawmenu_setting_edit_generic(row, pstr, '>', ftostr32(*(data)))
 #define lcd_implementation_drawmenu_setting_edit_callback_float32(row, pstr, pstr2, data, minValue, maxValue, callback) lcd_implementation_drawmenu_setting_edit_generic(row, pstr, ' ', ftostr32(*(data)))
-#define lcd_implementation_drawmenu_setting_edit_callback_float43_selected(row, pstr, pstr2, data, minValue, maxValue, callback) lcd_implementation_drawmenu_setting_edit_generic(row, pstr, '>', ftostr43(*(data)))
-#define lcd_implementation_drawmenu_setting_edit_callback_float43(row, pstr, pstr2, data, minValue, maxValue, callback) lcd_implementation_drawmenu_setting_edit_generic(row, pstr, ' ', ftostr43(*(data)))
 #define lcd_implementation_drawmenu_setting_edit_callback_float5_selected(row, pstr, pstr2, data, minValue, maxValue, callback) lcd_implementation_drawmenu_setting_edit_generic(row, pstr, '>', ftostr5(*(data)))
 #define lcd_implementation_drawmenu_setting_edit_callback_float5(row, pstr, pstr2, data, minValue, maxValue, callback) lcd_implementation_drawmenu_setting_edit_generic(row, pstr, ' ', ftostr5(*(data)))
 #define lcd_implementation_drawmenu_setting_edit_callback_float52_selected(row, pstr, pstr2, data, minValue, maxValue, callback) lcd_implementation_drawmenu_setting_edit_generic(row, pstr, '>', ftostr52(*(data)))
@@ -409,40 +466,118 @@ void lcd_implementation_drawedit(const char* pstr, char* value)
 		u8g.print(value);
 }
 
-static void _drawmenu_sd(uint8_t row, const char* pstr, const char* filename, char * const longFilename, bool isDir, bool isSelected) {
-  char c;
-  uint8_t n = LCD_WIDTH - 1;
+static void lcd_implementation_drawmenu_sdfile_selected(uint8_t row, const char* pstr, const char* filename, char* longFilename)
+{
+    char c;
+    uint8_t n = LCD_WIDTH - 1;
 
-  if (longFilename[0] != '\0') {
-    filename = longFilename;
-    longFilename[n] = '\0';
-  }
+    if (longFilename[0] != '\0')
+    {
+        filename = longFilename;
+        longFilename[LCD_WIDTH-1] = '\0';
+    }
 
-  if (isSelected) {
-    u8g.setColorIndex(1); // black on white
-    u8g.drawBox (0, row*DOG_CHAR_HEIGHT + 3, 128, DOG_CHAR_HEIGHT);
-    u8g.setColorIndex(0); // following text must be white on black
-  }
-
-  u8g.setPrintPos(0 * DOG_CHAR_WIDTH, (row + 1) * DOG_CHAR_HEIGHT);
-  u8g.print(' ');	// Indent by 1 char
-
-  if (isDir) u8g.print(LCD_STR_FOLDER[0]);
-
-  while((c = *filename) != '\0') {
-    u8g.print(c);
-    filename++;
-    n--;
-  }
-  while(n--) u8g.print(' ');
-
-  if (isSelected) u8g.setColorIndex(1); // black on white
+		u8g.setColorIndex(1);		// black on white
+		u8g.drawBox (0, row*DOG_CHAR_HEIGHT + 3, 128, DOG_CHAR_HEIGHT);
+		u8g.setColorIndex(0);		// following text must be white on black
+		u8g.setPrintPos(0 * DOG_CHAR_WIDTH, (row + 1) * DOG_CHAR_HEIGHT);
+		u8g.print(' ');	// Indent by 1 char
+	   
+    while((c = *filename) != '\0')
+    {
+		u8g.print(c);
+        filename++;
+        n--;
+    }
+    while(n--){
+					u8g.print(' ');
+			   }
+	u8g.setColorIndex(1);		// black on white
 }
 
-#define lcd_implementation_drawmenu_sdfile_selected(row, pstr, filename, longFilename) _drawmenu_sd(row, pstr, filename, longFilename, false, true)
-#define lcd_implementation_drawmenu_sdfile(row, pstr, filename, longFilename) _drawmenu_sd(row, pstr, filename, longFilename, false, false)
-#define lcd_implementation_drawmenu_sddirectory_selected(row, pstr, filename, longFilename) _drawmenu_sd(row, pstr, filename, longFilename, true, true)
-#define lcd_implementation_drawmenu_sddirectory(row, pstr, filename, longFilename) _drawmenu_sd(row, pstr, filename, longFilename, true, false)
+static void lcd_implementation_drawmenu_sdfile(uint8_t row, const char* pstr, const char* filename, char* longFilename)
+{
+    char c;
+    uint8_t n = LCD_WIDTH - 1;
+
+    if (longFilename[0] != '\0')
+    {
+        filename = longFilename;
+        longFilename[LCD_WIDTH-1] = '\0';
+    }
+
+		u8g.setPrintPos(0 * DOG_CHAR_WIDTH, (row + 1) * DOG_CHAR_HEIGHT);
+		u8g.print(' ');
+		
+while((c = *filename) != '\0')
+    {
+			u8g.print(c);
+		
+        filename++;
+        n--;
+    }
+    while(n--){
+					u8g.print(' ');
+			   }
+
+}
+
+static void lcd_implementation_drawmenu_sddirectory_selected(uint8_t row, const char* pstr, const char* filename, char* longFilename)
+{
+    char c;
+    uint8_t n = LCD_WIDTH - 2;
+		
+    if (longFilename[0] != '\0')
+    {
+        filename = longFilename;
+        longFilename[LCD_WIDTH-2] = '\0';
+    }
+		u8g.setColorIndex(1);		// black on white
+		u8g.drawBox (0, row*DOG_CHAR_HEIGHT + 3, 128, DOG_CHAR_HEIGHT);
+		u8g.setColorIndex(0);		// following text must be white on black
+		u8g.setPrintPos(0 * DOG_CHAR_WIDTH, (row + 1) * DOG_CHAR_HEIGHT);
+		u8g.print(' ');	// Indent by 1 char
+		u8g.print(LCD_STR_FOLDER[0]);		
+	   
+    while((c = *filename) != '\0')
+    {
+			u8g.print(c);
+		
+        filename++;
+        n--;
+    }
+    while(n--){
+					u8g.print(' ');
+			   }
+	u8g.setColorIndex(1);		// black on white
+}
+
+static void lcd_implementation_drawmenu_sddirectory(uint8_t row, const char* pstr, const char* filename, char* longFilename)
+{
+    char c;
+    uint8_t n = LCD_WIDTH - 2;
+
+    if (longFilename[0] != '\0')
+    {
+        filename = longFilename;
+        longFilename[LCD_WIDTH-2] = '\0';
+    }
+
+		u8g.setPrintPos(0 * DOG_CHAR_WIDTH, (row + 1) * DOG_CHAR_HEIGHT);
+		u8g.print(' ');
+		u8g.print(LCD_STR_FOLDER[0]);
+
+    while((c = *filename) != '\0')
+    {
+			u8g.print(c);
+		
+        filename++;
+        n--;
+    }
+    while(n--){
+					u8g.print(' ');
+			   }
+}
 
 #define lcd_implementation_drawmenu_back_selected(row, pstr, data) lcd_implementation_drawmenu_generic(row, pstr, LCD_STR_UPLEVEL[0], LCD_STR_UPLEVEL[0])
 #define lcd_implementation_drawmenu_back(row, pstr, data) lcd_implementation_drawmenu_generic(row, pstr, ' ', LCD_STR_UPLEVEL[0])
