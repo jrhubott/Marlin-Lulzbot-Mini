@@ -44,6 +44,8 @@
 #define Z_MS1_PIN           68
 #define Z_MS2_PIN           67
 
+#define PS_ON_PIN 71
+
 #define HEATER_BED_PIN       4
 #define TEMP_BED_PIN         2
 
@@ -82,9 +84,11 @@
 #define SDPOWER             -1
 #define SDSS                53
 #define LED_PIN             13
-#define FAN_PIN            8  //Fan0 --- Extruder0 Fan
-#define FAN1_PIN           -1  //Fan1 --- Extruder1 Fan
-#define FAN3_PIN           6  //Fan3 --- Case Fan
+//#define FAN_PIN            8  //Fan0 --- Extruder0 Fan
+//#define FAN1_PIN           -1  //Fan1 --- Extruder1 Fan
+//#define FAN3_PIN           6  //Fan3 --- Case Fan
+#define EXTRUDER_0_FAN_PIN	8
+#define CONTROLLERFAN_PIN	6
 #define KILL_PIN            -1  // 80 with Smart Controller LCD
 #define SUICIDE_PIN         -1  // PIN that has to be turned on right after start, to keep power flowing.
 
