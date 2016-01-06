@@ -84,11 +84,9 @@
 #define SDPOWER             -1
 #define SDSS                53
 #define LED_PIN             13
-//#define FAN_PIN            8  //Fan0 --- Extruder0 Fan
+#define FAN_PIN            8  //Fan0 --- Extruder0 Fan
 //#define FAN1_PIN           -1  //Fan1 --- Extruder1 Fan
-//#define FAN3_PIN           6  //Fan3 --- Case Fan
-#define EXTRUDER_0_FAN_PIN	8
-#define CONTROLLERFAN_PIN	6
+#define CONTROLLERFAN_PIN	6 //Fan3 --- Case Fan
 #define KILL_PIN            -1  // 80 with Smart Controller LCD
 #define SUICIDE_PIN         -1  // PIN that has to be turned on right after start, to keep power flowing.
 
