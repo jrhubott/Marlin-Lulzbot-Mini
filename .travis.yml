@@ -48,6 +48,7 @@ script:
   # build default config - Lulzbot Mini
   - DISPLAY=:1.0 ~/bin/arduino --pref build.path=$TRAVIS_BUILD_DIR/build --verify --board marlin:avr:mega  Marlin/Marlin.ino
 after_success:
+  - ./.travis_deploy.sh
   - ls
   - cd $TRAVIS_BUILD_DIR
   - ls build
