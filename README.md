@@ -1,3 +1,4 @@
+V1.1: [![Build Status](https://travis-ci.org/jrhubott/Marlin-Lulzbot-Mini.svg?branch=V1.1-Mini-Release-With-BugFixes)](https://travis-ci.org/jrhubott/Marlin-Lulzbot-Mini)
 # Marlin 3D Printer Firmware
 <img align="top" width=175 src="Documentation/Logo/Marlin%20Logo%20GitHub.png" />
  Additional documentation can be found in [our wiki](https://github.com/MarlinFirmware/Marlin/wiki/Main-Page).
