@@ -52,7 +52,6 @@ after_success:
   - ls
   - cd $TRAVIS_BUILD_DIR
   - ls build
-  - cp build/Marlin.cpp.hex 'build/MarlinMini-$TRAVIS_TAG.hex'
 deploy:
   skip_cleanup: true
   provider: releases
