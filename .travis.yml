@@ -51,12 +51,12 @@ after_success:
   - ls
   - cd $TRAVIS_BUILD_DIR
   - ls build
-  - cp build/Marlin.cpp.hex build/MarlinMini.hex
+  - cp build/Marlin.cpp.hex 'build/MarlinMini-$TRAVIS_TAG.hex'
 deploy:
   skip_cleanup: true
   provider: releases
   api_key:
     secure: a2p3sDtzYNuM6JRh74nGiCtd6l8ptBnD6SbM2MS1C5DLBy9gpIwczEbkz3QUOZ1nYIYOIeK6Hkjc2+dwsZp5K391BPaGjrtnWCElqz1SsMavkaMqjc8fP4rni1F2ZNbN+IHVkNU2o5rU2roiG/ZzTA29VL6Gi5bupdVeeqG+BmBFvYTj/n+EwcYgGHiqU383cHBY7BM3//iAaA7+h2uSWz6OmlOeSHLpLVqBT0vrIvXw7ObSTY9lcEc6ngT1MlA+1wTF/EV1e+GMPuJhy6SXJuQOxo5XU6YF+kz3YvArKwsRU/OxePccbE+CbJ5hv58u8ZwgN1TPDNi5gYy9ygwUgJwEqk/jimkpoqH+2LoSx1Yg2GO69SpYbv7xnJ2n1W3wBhuUhE5gmQypZEM30kcfYJFhTX1KbvyJmP8/QoAbcH0MwSgUMt94DDR1Zf9K8zEj02IeN75lnxgYMwLok8AsidUfxmMLIUoghaDFBlaL3ECRVgrAAaRWFjJzlNAeAkUQKa5LEhOserPWxusWynTkJCDGE5/fr9IKTaE2JWwRr7Mzdf2Bedv+776R14MwjOVuWpG7dPZPsVMtHiaeCzjJx3KZrwshdODzmHops6IO+EURxeTcazH2hibTXOU5vqKxAefyW0u6HDcgwjUS4OZ6LJaq7gygDrt1163DgMGg2Wg=
-  file: build/MarlinMini.hex
+  file: 'build/MarlinMini-$TRAVIS_TAG.hex'
   on:
     tags: true
