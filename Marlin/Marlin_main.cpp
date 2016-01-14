@@ -293,6 +293,7 @@ bool target_direction;
 #if ENABLED(AUTO_BED_LEVELING_FEATURE)
   int xy_travel_speed = XY_TRAVEL_SPEED;
   float zprobe_zoffset = Z_PROBE_OFFSET_FROM_EXTRUDER;
+  float zprobeValues[AUTO_BED_LEVELING_GRID_POINTS*AUTO_BED_LEVELING_GRID_POINTS]
 #endif
 
 #if ENABLED(Z_DUAL_ENDSTOPS) && DISABLED(DELTA)
@@ -2981,6 +2982,22 @@ inline void gcode_G28() {
             act = ProbeStay;
 
           measured_z = probe_pt(xProbe, yProbe, z_before, act, verbose_level);
+		  if(zprobeValues[probePointCounter] != 0.0)
+		  {
+			if(abs(measured_z - zprobeValues[probePointCounter]) > 0.3)
+			{
+				//Error occurred during calibration try again?
+				idle();
+				clean_up_after_endstop_move();
+				return;
+			}
+		  }
+		  else
+		  {
+			//Initialize to the new z value
+			zprobeValues[probePointCounter] = measured_z;
+		  }
+		  
 
           #if DISABLED(DELTA)
             mean += measured_z;
