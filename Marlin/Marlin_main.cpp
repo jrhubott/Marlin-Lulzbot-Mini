@@ -2921,102 +2921,125 @@ inline void gcode_G28() {
         int8_t indexIntoAB[auto_bed_leveling_grid_points][auto_bed_leveling_grid_points];
       #endif // !DELTA
 
-      int probePointCounter = 0;
+      
       bool zig = (auto_bed_leveling_grid_points & 1) ? true : false; //always end at [RIGHT_PROBE_BED_POSITION, BACK_PROBE_BED_POSITION]
 
-      for (int yCount = 0; yCount < auto_bed_leveling_grid_points; yCount++) {
-        double yProbe = front_probe_bed_position + yGridSpacing * yCount;
-        int xStart, xStop, xInc;
+	  bool retry = true;
+	  
+	  while(retry == true)
+	  {
+		int probePointCounter = 0;
+		retry = false;
+		
+		for (int yCount = 0; yCount < auto_bed_leveling_grid_points; yCount++) {
+			double yProbe = front_probe_bed_position + yGridSpacing * yCount;
+			int xStart, xStop, xInc;
 
-        if (zig) {
-          xStart = 0;
-          xStop = auto_bed_leveling_grid_points;
-          xInc = 1;
-        }
-        else {
-          xStart = auto_bed_leveling_grid_points - 1;
-          xStop = -1;
-          xInc = -1;
-        }
-
-        zig = !zig;
-
-        for (int xCount = xStart; xCount != xStop; xCount += xInc) {
-          double xProbe = left_probe_bed_position + xGridSpacing * xCount;
-
-          // raise extruder
-          float measured_z,
-                z_before = probePointCounter ? Z_RAISE_BETWEEN_PROBINGS + current_position[Z_AXIS] : Z_RAISE_BEFORE_PROBING;
-
-          if (probePointCounter) {
-            #if ENABLED(DEBUG_LEVELING_FEATURE)
-              if (marlin_debug_flags & DEBUG_LEVELING) {
-                SERIAL_ECHOPAIR("z_before = (between) ", (float)(Z_RAISE_BETWEEN_PROBINGS + current_position[Z_AXIS]));
-                SERIAL_EOL;
-              }
-            #endif
-          }
-          else {
-            #if ENABLED(DEBUG_LEVELING_FEATURE)
-              if (marlin_debug_flags & DEBUG_LEVELING) {
-                SERIAL_ECHOPAIR("z_before = (before) ", (float)Z_RAISE_BEFORE_PROBING);
-                SERIAL_EOL;
-              }
-            #endif
-          }
-
-          #if ENABLED(DELTA)
-            // Avoid probing the corners (outside the round or hexagon print surface) on a delta printer.
-            float distance_from_center = sqrt(xProbe * xProbe + yProbe * yProbe);
-            if (distance_from_center > DELTA_PROBABLE_RADIUS) continue;
-          #endif //DELTA
-
-          ProbeAction act;
-          if (deploy_probe_for_each_reading) // G29 E - Stow between probes
-            act = ProbeDeployAndStow;
-          else if (yCount == 0 && xCount == xStart)
-            act = ProbeDeploy;
-          else if (yCount == auto_bed_leveling_grid_points - 1 && xCount == xStop - xInc)
-            act = ProbeStow;
-          else
-            act = ProbeStay;
-
-          measured_z = probe_pt(xProbe, yProbe, z_before, act, verbose_level);
-		  if(zprobeValues[probePointCounter] != 0.0)
-		  {
-			if(abs(measured_z - zprobeValues[probePointCounter]) > 0.3)
-			{
-				//Error occurred during calibration try again?
-				idle();
-				clean_up_after_endstop_move();
-				return;
+			if (zig) {
+			  xStart = 0;
+			  xStop = auto_bed_leveling_grid_points;
+			  xInc = 1;
 			}
-		  }
-		  else
-		  {
-			//Initialize to the new z value
-			zprobeValues[probePointCounter] = measured_z;
-		  }
-		  
+			else {
+			  xStart = auto_bed_leveling_grid_points - 1;
+			  xStop = -1;
+			  xInc = -1;
+			}
 
-          #if DISABLED(DELTA)
-            mean += measured_z;
+			zig = !zig;
 
-            eqnBVector[probePointCounter] = measured_z;
-            eqnAMatrix[probePointCounter + 0 * abl2] = xProbe;
-            eqnAMatrix[probePointCounter + 1 * abl2] = yProbe;
-            eqnAMatrix[probePointCounter + 2 * abl2] = 1;
-            indexIntoAB[xCount][yCount] = probePointCounter;
-          #else
-            bed_level[xCount][yCount] = measured_z + z_offset;
-          #endif
+			for (int xCount = xStart; xCount != xStop; xCount += xInc) {
+			  double xProbe = left_probe_bed_position + xGridSpacing * xCount;
 
-          probePointCounter++;
+			  // raise extruder
+			  float measured_z,
+					z_before = probePointCounter ? Z_RAISE_BETWEEN_PROBINGS + current_position[Z_AXIS] : Z_RAISE_BEFORE_PROBING;
 
-          idle();
+			  if (probePointCounter) {
+				#if ENABLED(DEBUG_LEVELING_FEATURE)
+				  if (marlin_debug_flags & DEBUG_LEVELING) {
+					SERIAL_ECHOPAIR("z_before = (between) ", (float)(Z_RAISE_BETWEEN_PROBINGS + current_position[Z_AXIS]));
+					SERIAL_EOL;
+				  }
+				#endif
+			  }
+			  else {
+				#if ENABLED(DEBUG_LEVELING_FEATURE)
+				  if (marlin_debug_flags & DEBUG_LEVELING) {
+					SERIAL_ECHOPAIR("z_before = (before) ", (float)Z_RAISE_BEFORE_PROBING);
+					SERIAL_EOL;
+				  }
+				#endif
+			  }
 
-        } //xProbe
-      } //yProbe
+			  #if ENABLED(DELTA)
+				// Avoid probing the corners (outside the round or hexagon print surface) on a delta printer.
+				float distance_from_center = sqrt(xProbe * xProbe + yProbe * yProbe);
+				if (distance_from_center > DELTA_PROBABLE_RADIUS) continue;
+			  #endif //DELTA
+
+			  ProbeAction act;
+			  if (deploy_probe_for_each_reading) // G29 E - Stow between probes
+				act = ProbeDeployAndStow;
+			  else if (yCount == 0 && xCount == xStart)
+				act = ProbeDeploy;
+			  else if (yCount == auto_bed_leveling_grid_points - 1 && xCount == xStop - xInc)
+				act = ProbeStow;
+			  else
+				act = ProbeStay;
+
+			  measured_z = probe_pt(xProbe, yProbe, z_before, act, verbose_level);
+			  if(zprobeValues[probePointCounter] != 0.0)
+			  {
+				if(abs(measured_z - zprobeValues[probePointCounter]) > 0.3)
+				{
+					//move the head to a known location for cleaning
+				
+					//Wait until the endstop is tripped
+					while((READ(Z_MIN_PIN) != Z_MIN_ENDSTOP_INVERTING)
+					{
+						idle();
+					}
+					//Run again
+					gcode_G28();	//Home the instrument first
+					retry = true;
+					break;
+				}
+			  }
+			  else
+			  {
+				//Initialize to the new z value
+				zprobeValues[probePointCounter] = measured_z;
+			  }
+			  
+
+			  #if DISABLED(DELTA)
+				mean += measured_z;
+
+				eqnBVector[probePointCounter] = measured_z;
+				eqnAMatrix[probePointCounter + 0 * abl2] = xProbe;
+				eqnAMatrix[probePointCounter + 1 * abl2] = yProbe;
+				eqnAMatrix[probePointCounter + 2 * abl2] = 1;
+				indexIntoAB[xCount][yCount] = probePointCounter;
+			  #else
+				bed_level[xCount][yCount] = measured_z + z_offset;
+			  #endif
+
+			  probePointCounter++;
+
+			  idle();
+
+			} //xProbe
+			
+			if(retry == true)
+			{
+				//exit y loop
+				break;
+			}
+		  }//yProbe
+	  }
+	  
+      
 
       #if ENABLED(DEBUG_LEVELING_FEATURE)
         if (marlin_debug_flags & DEBUG_LEVELING) {
