@@ -2240,10 +2240,11 @@ inline void gcode_G28() {
 
   // For auto bed leveling, clear the level matrix
   #if ENABLED(AUTO_BED_LEVELING_FEATURE)
-	#ifndef SAVE_G29_CORRECTION_MATRIX
+	#if ENABLED(SAVE_G29_CORRECTION_MATRIX)
 		matrix_3x3 temp_plan_bed_level_matrix = plan_bed_level_matrix;
-		plan_bed_level_matrix.set_to_identity();
 	#endif
+	plan_bed_level_matrix.set_to_identity();
+	
     #if ENABLED(DELTA)
       reset_bed_level();
     #endif
@@ -2598,13 +2599,13 @@ inline void gcode_G28() {
   #endif
 
   //Restore the leveling matrix
-  #ifndef SAVE_G29_CORRECTION_MATRIX
+  #if ENABLED(SAVE_G29_CORRECTION_MATRIX)
 		plan_bed_level_matrix = temp_plan_bed_level_matrix;
 		vector_3 corrected_position = plan_get_position();
         
         current_position[X_AXIS] = corrected_position.x;
         current_position[Y_AXIS] = corrected_position.y;
-        current_position[Z_AXIS] = corrected_position.z + zprobe_zoffset;
+        current_position[Z_AXIS] = corrected_position.z - zprobe_zoffset;
 		sync_plan_position();
   #endif
 }
