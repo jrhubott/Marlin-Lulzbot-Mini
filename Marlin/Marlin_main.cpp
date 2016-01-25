@@ -2604,7 +2604,7 @@ inline void gcode_G28() {
         
         current_position[X_AXIS] = corrected_position.x;
         current_position[Y_AXIS] = corrected_position.y;
-        current_position[Z_AXIS] = corrected_position.z;
+        current_position[Z_AXIS] = corrected_position.z + zprobe_zoffset;
 		sync_plan_position();
   #endif
 }
