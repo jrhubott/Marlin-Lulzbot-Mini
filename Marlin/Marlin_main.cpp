@@ -218,8 +218,7 @@
  * ************ Custom codes - This can change to suit future G-code regulations
  * M100 - Watch Free Memory (For Debugging Only)
  * M851 - Set Z probe's Z offset (mm above extruder -- The value will always be negative)
-
-
+ * M852 - Display leveling matrix
  * M928 - Start SD logging (M928 filename.g) - ended by M29
  * M999 - Restart after being stopped by error
  *
@@ -6233,6 +6232,15 @@ void process_next_command() {
           break;
       #endif // DUAL_X_CARRIAGE
 
+	  #if ENABLED(AUTO_BED_LEVELING_FEATURE)
+	  case 852:
+		CONFIG_ECHO_START;
+		SERIAL_ECHO_START;
+		plan_bed_level_matrix.debug("\n\nBed Level Correction Matrix:");
+		SERIAL_EOL;
+		break;
+	  #endif
+	  
       case 907: // M907 Set digital trimpot motor current using axis codes.
         gcode_M907();
         break;
