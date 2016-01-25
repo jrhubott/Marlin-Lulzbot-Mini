@@ -2600,6 +2600,12 @@ inline void gcode_G28() {
   //Restore the leveling matrix
   #ifndef SAVE_G29_CORRECTION_MATRIX
 		plan_bed_level_matrix = temp_plan_bed_level_matrix;
+		vector_3 corrected_position = plan_get_position();
+        
+        current_position[X_AXIS] = corrected_position.x;
+        current_position[Y_AXIS] = corrected_position.y;
+        current_position[Z_AXIS] = corrected_position.z;
+		sync_plan_position();
   #endif
 }
 
