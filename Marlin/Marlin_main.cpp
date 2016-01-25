@@ -2553,6 +2553,27 @@ inline void gcode_G28() {
     #endif // Z_HOME_DIR < 0
 
     sync_plan_position();
+	
+	//Restore the leveling matrix
+    #if ENABLED(SAVE_G29_CORRECTION_MATRIX)
+		plan_bed_level_matrix = temp_plan_bed_level_matrix;
+		vector_3 corrected_position = plan_get_position();
+        
+        current_position[X_AXIS] = corrected_position.x;
+        current_position[Y_AXIS] = corrected_position.y;
+        current_position[Z_AXIS] = corrected_position.z - zprobe_zoffset;
+		sync_plan_position();
+    #endif
+
+    //Set the z-level by using 1 point  
+    #if ENABLED(AUTO_BED_LEVELING_FEATURE)
+		if (home_all_axis || homeZ)
+		{
+			float measured_z = probe_pt(LEFT_PROBE_BED_POSITION, FRONT_PROBE_BED_POSITION, Z_RAISE_BEFORE_PROBING, ProbeStay, 1);
+			correctZHeight();
+		}
+    #endif
+
 
   #endif // else DELTA
 
@@ -2598,23 +2619,6 @@ inline void gcode_G28() {
     if (marlin_debug_flags & DEBUG_LEVELING) {
       SERIAL_ECHOLNPGM("<<< gcode_G28");
     }
-  #endif
-
-  //Restore the leveling matrix
-  #if ENABLED(SAVE_G29_CORRECTION_MATRIX)
-		plan_bed_level_matrix = temp_plan_bed_level_matrix;
-		vector_3 corrected_position = plan_get_position();
-        
-        current_position[X_AXIS] = corrected_position.x;
-        current_position[Y_AXIS] = corrected_position.y;
-        current_position[Z_AXIS] = corrected_position.z - zprobe_zoffset;
-		sync_plan_position();
-  #endif
-
-  //Set the z-level by using 1 point  
-  #if ENABLED(AUTO_BED_LEVELING_FEATURE)
-	float measured_z = probe_pt(LEFT_PROBE_BED_POSITION, FRONT_PROBE_BED_POSITION, Z_RAISE_BEFORE_PROBING, ProbeStay, 1);
-	correctZHeight();
   #endif
 }
 
