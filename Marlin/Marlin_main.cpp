@@ -442,6 +442,8 @@ void serial_echopair_P(const char* s_P, float v)         { serialprintPGM(s_P); 
 void serial_echopair_P(const char* s_P, double v)        { serialprintPGM(s_P); SERIAL_ECHO(v); }
 void serial_echopair_P(const char* s_P, unsigned long v) { serialprintPGM(s_P); SERIAL_ECHO(v); }
 
+void correctZHeight();
+
 #if ENABLED(PREVENT_DANGEROUS_EXTRUDE)
   float extrude_min_temp = EXTRUDE_MINTEMP;
 #endif
@@ -2608,6 +2610,12 @@ inline void gcode_G28() {
         current_position[Z_AXIS] = corrected_position.z - zprobe_zoffset;
 		sync_plan_position();
   #endif
+
+  //Set the z-level by using 1 point  
+  #if ENABLED(AUTO_BED_LEVELING_FEATURE)
+	float measured_z = probe_pt(LEFT_PROBE_BED_POSITION, FRONT_PROBE_BED_POSITION, Z_RAISE_BEFORE_PROBING, ProbeStay, 1);
+	correctZHeight();
+  #endif
 }
 
 #if ENABLED(MESH_BED_LEVELING)
@@ -3151,13 +3159,41 @@ inline void gcode_G28() {
         plan_bed_level_matrix.debug(" \n\nBed Level Correction Matrix:");
 
       if (!dryrun) {
-        // Correct the Z height difference from Z probe position and nozzle tip position.
-        // The Z height on homing is measured by Z probe, but the Z probe is quite far from the nozzle.
-        // When the bed is uneven, this height must be corrected.
-        float x_tmp = current_position[X_AXIS] + X_PROBE_OFFSET_FROM_EXTRUDER,
-              y_tmp = current_position[Y_AXIS] + Y_PROBE_OFFSET_FROM_EXTRUDER,
-              z_tmp = current_position[Z_AXIS],
-              real_z = st_get_position_mm(Z_AXIS);  //get the real Z (since plan_get_position is now correcting the plane)
+        correctZHeight();
+      }
+
+      // Sled assembly for Cartesian bots
+      #if ENABLED(Z_PROBE_SLED)
+        dock_sled(true); // dock the sled
+      #endif
+
+    #endif // !DELTA
+
+    #ifdef Z_PROBE_END_SCRIPT
+      #if ENABLED(DEBUG_LEVELING_FEATURE)
+        if (marlin_debug_flags & DEBUG_LEVELING) {
+          SERIAL_ECHO("Z Probe End Script: ");
+          SERIAL_ECHOLNPGM(Z_PROBE_END_SCRIPT);
+        }
+      #endif
+      enqueuecommands_P(PSTR(Z_PROBE_END_SCRIPT));
+      st_synchronize();
+    #endif
+
+    #if ENABLED(DEBUG_LEVELING_FEATURE)
+      if (marlin_debug_flags & DEBUG_LEVELING) {
+        SERIAL_ECHOLNPGM("<<< gcode_G29");
+      }
+    #endif
+
+  }
+  
+  void correctZHeight()
+  {
+	  float x_tmp = current_position[X_AXIS] + X_PROBE_OFFSET_FROM_EXTRUDER,
+		  y_tmp = current_position[Y_AXIS] + Y_PROBE_OFFSET_FROM_EXTRUDER,
+		  z_tmp = current_position[Z_AXIS],
+		  real_z = st_get_position_mm(Z_AXIS);  //get the real Z (since plan_get_position is now correcting the plane)
 
         #if ENABLED(DEBUG_LEVELING_FEATURE)
           if (marlin_debug_flags & DEBUG_LEVELING) {
@@ -3206,32 +3242,6 @@ inline void gcode_G28() {
             print_xyz("> corrected Z in G29", current_position);
           }
         #endif
-      }
-
-      // Sled assembly for Cartesian bots
-      #if ENABLED(Z_PROBE_SLED)
-        dock_sled(true); // dock the sled
-      #endif
-
-    #endif // !DELTA
-
-    #ifdef Z_PROBE_END_SCRIPT
-      #if ENABLED(DEBUG_LEVELING_FEATURE)
-        if (marlin_debug_flags & DEBUG_LEVELING) {
-          SERIAL_ECHO("Z Probe End Script: ");
-          SERIAL_ECHOLNPGM(Z_PROBE_END_SCRIPT);
-        }
-      #endif
-      enqueuecommands_P(PSTR(Z_PROBE_END_SCRIPT));
-      st_synchronize();
-    #endif
-
-    #if ENABLED(DEBUG_LEVELING_FEATURE)
-      if (marlin_debug_flags & DEBUG_LEVELING) {
-        SERIAL_ECHOLNPGM("<<< gcode_G29");
-      }
-    #endif
-
   }
 
   #if DISABLED(Z_PROBE_SLED)
