@@ -218,7 +218,8 @@
  * ************ Custom codes - This can change to suit future G-code regulations
  * M100 - Watch Free Memory (For Debugging Only)
  * M851 - Set Z probe's Z offset (mm above extruder -- The value will always be negative)
- * M852 - Display leveling matrix
+
+
  * M928 - Start SD logging (M928 filename.g) - ended by M29
  * M999 - Restart after being stopped by error
  *
@@ -2553,6 +2554,13 @@ inline void gcode_G28() {
 
     sync_plan_position();
 	
+	#if ENABLED(AUTO_BED_LEVELING_FEATURE)
+		if (home_all_axis || homeZ)
+		{
+			float measured_z = probe_pt(LEFT_PROBE_BED_POSITION, FRONT_PROBE_BED_POSITION, Z_RAISE_BEFORE_PROBING, ProbeStay, 1);
+		}
+	#endif
+	
 	//Restore the leveling matrix
     #if ENABLED(SAVE_G29_CORRECTION_MATRIX)
 		plan_bed_level_matrix = temp_plan_bed_level_matrix;
@@ -2568,7 +2576,6 @@ inline void gcode_G28() {
     #if ENABLED(AUTO_BED_LEVELING_FEATURE)
 		if (home_all_axis || homeZ)
 		{
-			float measured_z = probe_pt(LEFT_PROBE_BED_POSITION, FRONT_PROBE_BED_POSITION, Z_RAISE_BEFORE_PROBING, ProbeStay, 1);
 			correctZHeight();
 		}
     #endif
@@ -6232,15 +6239,6 @@ void process_next_command() {
           break;
       #endif // DUAL_X_CARRIAGE
 
-	  #if ENABLED(AUTO_BED_LEVELING_FEATURE)
-	  case 852:
-		CONFIG_ECHO_START;
-		SERIAL_ECHO_START;
-		plan_bed_level_matrix.debug("\n\nBed Level Correction Matrix:");
-		SERIAL_EOL;
-		break;
-	  #endif
-	  
       case 907: // M907 Set digital trimpot motor current using axis codes.
         gcode_M907();
         break;
