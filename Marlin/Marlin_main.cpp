@@ -2240,7 +2240,9 @@ inline void gcode_G28() {
 
   // For auto bed leveling, clear the level matrix
   #if ENABLED(AUTO_BED_LEVELING_FEATURE)
-    plan_bed_level_matrix.set_to_identity();
+	#ifndef SAVE_G29_CORRECTION_MATRIX
+		plan_bed_level_matrix.set_to_identity();
+	#endif
     #if ENABLED(DELTA)
       reset_bed_level();
     #endif
