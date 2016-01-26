@@ -2561,7 +2561,7 @@ inline void gcode_G28() {
     sync_plan_position();
 	
 	#if ENABLED(AUTO_BED_LEVELING_FEATURE)
-		if (home_all_axis || homeZ)
+		if (home_all_axis)
 		{
 			float measured_z = probe_pt(LEFT_PROBE_BED_POSITION, FRONT_PROBE_BED_POSITION, Z_RAISE_BEFORE_PROBING, ProbeStay, 1);
 		}
@@ -2586,7 +2586,7 @@ inline void gcode_G28() {
 
     //Set the z-level by using 1 point  
     #if ENABLED(AUTO_BED_LEVELING_FEATURE)
-		if (home_all_axis || homeZ)
+		if (home_all_axis)
 		{
 			correctZHeight();
 		}
