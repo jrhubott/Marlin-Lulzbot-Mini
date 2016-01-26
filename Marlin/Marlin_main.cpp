@@ -2311,7 +2311,7 @@ inline void gcode_G28() {
     home_all_axis = (!homeX && !homeY && !homeZ && !setZhomeOffset) || (homeX && homeY && homeZ);
 	
 	// Home the Z axis if it is to low
-	if(current_position[Z_AXIS] < 5 || setZhomeOffset)
+	if(current_position[Z_AXIS] < 5)
 	{
 		homeZ = true;
 	}
@@ -2319,6 +2319,7 @@ inline void gcode_G28() {
 	if(setZhomeOffset)
 	{
 		home_offset[Z_AXIS] = 0;
+		home_all_axis = true;	//Home all axis's to get the best Z home offset calculation
 	}
 
     if (home_all_axis || homeZ) {
