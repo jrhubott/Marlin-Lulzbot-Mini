@@ -8,7 +8,7 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -2244,6 +2244,12 @@ inline void gcode_G28() {
   #if ENABLED(AUTO_BED_LEVELING_FEATURE)
 	#if ENABLED(SAVE_G29_CORRECTION_MATRIX)
 		matrix_3x3 temp_plan_bed_level_matrix = plan_bed_level_matrix;
+		
+		if (marlin_debug_flags & DEBUG_LEVELING) 
+		{  
+			temp_plan_bed_level_matrix.debug("\nSaved Bed Level Correction Matrix:");
+		}
+		
 	#endif
 	plan_bed_level_matrix.set_to_identity();
 	
@@ -2564,11 +2570,17 @@ inline void gcode_G28() {
 	//Restore the leveling matrix
     #if ENABLED(SAVE_G29_CORRECTION_MATRIX)
 		plan_bed_level_matrix = temp_plan_bed_level_matrix;
+		
+		if (marlin_debug_flags & DEBUG_LEVELING) 
+		{
+			plan_bed_level_matrix.debug("\nRestored Bed Level Correction Matrix:");
+		}
+		
 		vector_3 corrected_position = plan_get_position();
         
         current_position[X_AXIS] = corrected_position.x;
         current_position[Y_AXIS] = corrected_position.y;
-        current_position[Z_AXIS] = corrected_position.z - zprobe_zoffset;
+        current_position[Z_AXIS] = corrected_position.z;
 		sync_plan_position();
     #endif
 
@@ -2580,7 +2592,7 @@ inline void gcode_G28() {
 		}
     #endif
 
-
+	
   #endif // else DELTA
 
   #if ENABLED(SCARA)
