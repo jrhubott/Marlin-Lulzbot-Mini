@@ -2305,8 +2305,10 @@ inline void gcode_G28() {
 
     bool  homeX = code_seen(axis_codes[X_AXIS]),
           homeY = code_seen(axis_codes[Y_AXIS]),
-          homeZ = code_seen(axis_codes[Z_AXIS]),
-		  setZhomeOffset = code_seen('P');
+	#if ENABLED(G28_AUTOSET_Z_HOME_OFFSET)
+		  setZhomeOffset = code_seen('P'),
+	#endif
+		  homeZ = code_seen(axis_codes[Z_AXIS]);
 
     home_all_axis = (!homeX && !homeY && !homeZ && !setZhomeOffset) || (homeX && homeY && homeZ);
 	
@@ -2316,11 +2318,13 @@ inline void gcode_G28() {
 		homeZ = true;
 	}
 	
+	#if ENABLED(G28_AUTOSET_Z_HOME_OFFSET)
 	if(setZhomeOffset)
 	{
 		home_offset[Z_AXIS] = 0;
 		home_all_axis = true;	//Home all axis's to get the best Z home offset calculation
 	}
+	#endif
 
     if (home_all_axis || homeZ) {
 
@@ -2573,7 +2577,7 @@ inline void gcode_G28() {
 
     sync_plan_position();
 	
-	#if ENABLED(AUTO_BED_LEVELING_FEATURE)
+	#if ENABLED(G28_AUTOSET_Z_HOME_OFFSET)
 		if (setZhomeOffset)
 		{
 			float measured_z = probe_pt(LEFT_PROBE_BED_POSITION, FRONT_PROBE_BED_POSITION, Z_RAISE_BEFORE_PROBING, ProbeStay, 1);
@@ -2606,7 +2610,7 @@ inline void gcode_G28() {
     #endif
 
     //Set the z-level by using 1 point  
-    #if ENABLED(AUTO_BED_LEVELING_FEATURE)
+    #if ENABLED(G28_AUTOSET_Z_HOME_OFFSET)
 		if (setZhomeOffset)
 		{
 			correctZHeight();
