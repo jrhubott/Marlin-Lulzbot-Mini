@@ -2305,9 +2305,21 @@ inline void gcode_G28() {
 
     bool  homeX = code_seen(axis_codes[X_AXIS]),
           homeY = code_seen(axis_codes[Y_AXIS]),
-          homeZ = code_seen(axis_codes[Z_AXIS]);
+          homeZ = code_seen(axis_codes[Z_AXIS]),
+		  setZhomeOffset = code_seen('P');
 
-    home_all_axis = (!homeX && !homeY && !homeZ) || (homeX && homeY && homeZ);
+    home_all_axis = (!homeX && !homeY && !homeZ && !setZhomeOffset) || (homeX && homeY && homeZ);
+	
+	// Home the Z axis if it is to low
+	if(current_position[Z_AXIS] < 5 || setZhomeOffset)
+	{
+		homeZ = true;
+	}
+	
+	if(setZhomeOffset)
+	{
+		home_offset[Z_AXIS] = 0;
+	}
 
     if (home_all_axis || homeZ) {
 
@@ -2561,9 +2573,17 @@ inline void gcode_G28() {
     sync_plan_position();
 	
 	#if ENABLED(AUTO_BED_LEVELING_FEATURE)
-		if (home_all_axis)
+		if (setZhomeOffset)
 		{
 			float measured_z = probe_pt(LEFT_PROBE_BED_POSITION, FRONT_PROBE_BED_POSITION, Z_RAISE_BEFORE_PROBING, ProbeStay, 1);
+			
+			//Set Z offset
+			home_offset[Z_AXIS] = 0 - measured_z - zprobe_zoffset;
+			
+			if (marlin_debug_flags & DEBUG_LEVELING) {
+				SERIAL_ECHOPAIR("Z Home offset set to ", (float)home_offset[Z_AXIS]);
+				SERIAL_EOL;
+			}
 		}
 	#endif
 	
@@ -2586,7 +2606,7 @@ inline void gcode_G28() {
 
     //Set the z-level by using 1 point  
     #if ENABLED(AUTO_BED_LEVELING_FEATURE)
-		if (home_all_axis)
+		if (setZhomeOffset)
 		{
 			correctZHeight();
 		}
