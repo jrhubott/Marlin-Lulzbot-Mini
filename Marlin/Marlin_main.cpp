@@ -2582,6 +2582,7 @@ inline void gcode_G28() {
 		{
 			if (marlin_debug_flags & DEBUG_LEVELING) {
 				SERIAL_ECHOPAIR("Z Probe Started at: ", (float)st_get_position_mm(Z_AXIS));
+				SERIAL_EOL;
 			}
 		
 			float measured_z = probe_pt(LEFT_PROBE_BED_POSITION, FRONT_PROBE_BED_POSITION, Z_RAISE_BEFORE_PROBING, ProbeStay, 1);
