@@ -2580,13 +2580,19 @@ inline void gcode_G28() {
 	#if ENABLED(G28_AUTOSET_Z_HOME_OFFSET)
 		if (setZhomeOffset)
 		{
+			if (marlin_debug_flags & DEBUG_LEVELING) {
+				SERIAL_ECHOPAIR("Z Probe Started at: ", (float)st_get_position_mm(Z_AXIS));
+			}
+		
 			float measured_z = probe_pt(LEFT_PROBE_BED_POSITION, FRONT_PROBE_BED_POSITION, Z_RAISE_BEFORE_PROBING, ProbeStay, 1);
 			
 			//Set Z offset
-			home_offset[Z_AXIS] = 0 - measured_z - zprobe_zoffset;
+			home_offset[Z_AXIS] = ((float)0.0) - measured_z - zprobe_zoffset;
 			
 			if (marlin_debug_flags & DEBUG_LEVELING) {
-				SERIAL_ECHOPAIR("Z Home offset set to ", (float)home_offset[Z_AXIS]);
+				SERIAL_ECHOPAIR("Z Position Ended at: ", (float)measured_z);
+				SERIAL_EOL;
+				SERIAL_ECHOPAIR("Z Home offset set to: ", (float)home_offset[Z_AXIS]);
 				SERIAL_EOL;
 			}
 		}
