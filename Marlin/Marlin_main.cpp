@@ -2312,10 +2312,18 @@ inline void gcode_G28() {
 
     home_all_axis = (!homeX && !homeY && !homeZ && !setZhomeOffset) || (homeX && homeY && homeZ);
 	
-	// Home the Z axis if it is to low
-	if(current_position[Z_AXIS] < 5)
+	//If we don't know our current location / home Z first
+	if(axis_known_position[Z_AXIS] == false)
 	{
 		homeZ = true;
+	}
+	else if(current_position[Z_AXIS] < 10)
+	{
+		//Position the Z axis if it is below 10
+		destination[Z_AXIS] = 10;
+		feedrate = max_feedrate[Z_AXIS] * 60;
+		line_to_destination();
+        st_synchronize();
 	}
 	
 	#if ENABLED(G28_AUTOSET_Z_HOME_OFFSET)
