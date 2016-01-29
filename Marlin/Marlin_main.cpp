@@ -2139,7 +2139,7 @@ inline void gcode_G0_G1() {
       }
 	  
 	  //Check if the destionation is off the build plane
-	  if(destination[Y_AXIS] > Y_MAX_BED_POS && relative_mode==false)
+	  if(destination[Y_AXIS] > Y_MAX_BED_POS && destination[Z_AXIS] < home_offset[Z_AXIS] && relative_mode==false)
 	  {
 		//Raise the Z Axis by the z_axis home amount so the wiping will not be to low
 		destination[Z_AXIS] += home_offset[Z_AXIS];
