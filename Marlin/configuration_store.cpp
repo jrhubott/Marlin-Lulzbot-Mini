@@ -208,6 +208,9 @@ void Config_StoreSettings()  {
     float zprobe_zoffset = 0;
   #endif
   EEPROM_WRITE_VAR(i, zprobe_zoffset);
+  #ifdef SAVE_G29_CORRECTION_MATRIX
+  EEPROM_WRITE_VAR(i,plan_bed_level_matrix);
+  #endif
 
   #if ENABLED(DELTA)
     EEPROM_WRITE_VAR(i, endstop_adj);               // 3 floats
@@ -363,7 +366,7 @@ void Config_RetrieveSettings() {
     EEPROM_READ_VAR(i, max_z_jerk);
     EEPROM_READ_VAR(i, max_e_jerk);
     EEPROM_READ_VAR(i, home_offset);
-
+    
     uint8_t dummy_uint8 = 0, mesh_num_x = 0, mesh_num_y = 0;
     EEPROM_READ_VAR(i, dummy_uint8);
     EEPROM_READ_VAR(i, mesh_num_x);
@@ -384,7 +387,9 @@ void Config_RetrieveSettings() {
       float zprobe_zoffset = 0;
     #endif
     EEPROM_READ_VAR(i, zprobe_zoffset);
-
+	#ifdef SAVE_G29_CORRECTION_MATRIX
+        EEPROM_READ_VAR(i,plan_bed_level_matrix);
+	#endif
     #if ENABLED(DELTA)
       EEPROM_READ_VAR(i, endstop_adj);                // 3 floats
       EEPROM_READ_VAR(i, delta_radius);               // 1 float
@@ -549,6 +554,10 @@ void Config_ResetDefault() {
 
   #if ENABLED(AUTO_BED_LEVELING_FEATURE)
     zprobe_zoffset = Z_PROBE_OFFSET_FROM_EXTRUDER;
+  #endif
+  
+  #ifdef SAVE_G29_CORRECTION_MATRIX
+    plan_bed_level_matrix.set_to_identity();
   #endif
 
   #if ENABLED(DELTA)
@@ -934,6 +943,11 @@ void Config_PrintSettings(bool forReplay) {
       }
     #endif
     SERIAL_EOL;
+	#ifdef SAVE_G29_CORRECTION_MATRIX
+		SERIAL_ECHO_START;
+		plan_bed_level_matrix.debug("\n\nBed Level Correction Matrix:");
+		SERIAL_EOL;
+	#endif
   #endif
 }
 

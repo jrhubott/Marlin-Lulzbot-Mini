@@ -9,7 +9,7 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -472,6 +472,8 @@ void serial_echopair_P(const char* s_P, float v)         { serialprintPGM(s_P); 
 void serial_echopair_P(const char* s_P, double v)        { serialprintPGM(s_P); SERIAL_ECHO(v); }
 void serial_echopair_P(const char* s_P, unsigned long v) { serialprintPGM(s_P); SERIAL_ECHO(v); }
 
+void correctZHeight();
+
 void gcode_M114();
 
 #if ENABLED(PREVENT_DANGEROUS_EXTRUDE)
@@ -510,17 +512,17 @@ static bool drain_queued_commands_P() {
   if (queued_commands_P != NULL) {
     size_t i = 0;
     char c, cmd[30];
-    strncpy_P(cmd, queued_commands_P, sizeof(cmd) - 1);
-    cmd[sizeof(cmd) - 1] = '\0';
-    while ((c = cmd[i]) && c != '\n') i++; // find the end of this gcode command
-    cmd[i] = '\0';
+  strncpy_P(cmd, queued_commands_P, sizeof(cmd) - 1);
+  cmd[sizeof(cmd) - 1] = '\0';
+  while ((c = cmd[i]) && c != '\n') i++; // find the end of this gcode command
+  cmd[i] = '\0';
     if (enqueue_and_echo_command(cmd)) {   // success?
       if (c)                               // newline char?
         queued_commands_P += i + 1;        // advance to the next command
-      else
+    else
         queued_commands_P = NULL;          // nul char? no more commands
-    }
   }
+}
   return (queued_commands_P != NULL);      // return whether any more remain
 }
 
@@ -563,12 +565,12 @@ void enqueue_and_echo_command_now(const char* cmd) {
  */
 bool enqueue_and_echo_command(const char* cmd, bool say_ok/*=false*/) {
   if (_enqueuecommand(cmd, say_ok)) {
-    SERIAL_ECHO_START;
-    SERIAL_ECHOPGM(MSG_Enqueueing);
+  SERIAL_ECHO_START;
+  SERIAL_ECHOPGM(MSG_Enqueueing);
     SERIAL_ECHO(cmd);
-    SERIAL_ECHOLNPGM("\"");
-    return true;
-  }
+  SERIAL_ECHOLNPGM("\"");
+  return true;
+}
   return false;
 }
 
@@ -640,7 +642,7 @@ void servo_init() {
     servo[3].detach();
   #endif
 
-   #if HAS_SERVO_ENDSTOPS
+  #if HAS_SERVO_ENDSTOPS
 
     z_probe_is_active = false;
 
@@ -1033,7 +1035,7 @@ void get_command() {
         sd_count = 0; //clear buffer
 
         _commit_command(false);
-      }
+        }
       else if (sd_count >= MAX_CMD_SIZE - 1) {
         // Keep fetching, but ignore normal characters beyond the max length
         // The command will be injected when EOL is reached
@@ -1480,11 +1482,11 @@ static void setup_for_endstop_move() {
   inline void raise_z_after_probing() { do_blocking_move_to_z(current_position[Z_AXIS] + Z_RAISE_AFTER_PROBING); }
 
   static void clean_up_after_endstop_move() {
-    #if ENABLED(DEBUG_LEVELING_FEATURE)
-      if (marlin_debug_flags & DEBUG_LEVELING) {
+      #if ENABLED(DEBUG_LEVELING_FEATURE)
+        if (marlin_debug_flags & DEBUG_LEVELING) {
         SERIAL_ECHOLNPGM("clean_up_after_endstop_move > ENDSTOPS_ONLY_FOR_HOMING > endstops_not_homing()");
-      }
-    #endif
+        }
+      #endif
     endstops_not_homing();
     feedrate = saved_feedrate;
     feedrate_multiplier = saved_feedrate_multiplier;
@@ -1542,19 +1544,19 @@ static void setup_for_endstop_move() {
             if (Z_PROBE_ALLEN_KEY_DEPLOY_3_FEEDRATE != Z_PROBE_ALLEN_KEY_DEPLOY_2_FEEDRATE)
               feedrate = Z_PROBE_ALLEN_KEY_DEPLOY_3_FEEDRATE;
 
-            // Move to trigger deployment
-            if (Z_PROBE_ALLEN_KEY_DEPLOY_3_FEEDRATE != Z_PROBE_ALLEN_KEY_DEPLOY_2_FEEDRATE)
-              feedrate = Z_PROBE_ALLEN_KEY_DEPLOY_3_FEEDRATE;
-            if (Z_PROBE_ALLEN_KEY_DEPLOY_3_X != Z_PROBE_ALLEN_KEY_DEPLOY_2_X)
-              destination[X_AXIS] = Z_PROBE_ALLEN_KEY_DEPLOY_3_X;
-            if (Z_PROBE_ALLEN_KEY_DEPLOY_3_Y != Z_PROBE_ALLEN_KEY_DEPLOY_2_Y)
-              destination[Y_AXIS] = Z_PROBE_ALLEN_KEY_DEPLOY_3_Y;
-            if (Z_PROBE_ALLEN_KEY_DEPLOY_3_Z != Z_PROBE_ALLEN_KEY_DEPLOY_2_Z)
-              destination[Z_AXIS] = Z_PROBE_ALLEN_KEY_DEPLOY_3_Z;
+          // Move to trigger deployment
+          if (Z_PROBE_ALLEN_KEY_DEPLOY_3_FEEDRATE != Z_PROBE_ALLEN_KEY_DEPLOY_2_FEEDRATE)
+            feedrate = Z_PROBE_ALLEN_KEY_DEPLOY_3_FEEDRATE;
+          if (Z_PROBE_ALLEN_KEY_DEPLOY_3_X != Z_PROBE_ALLEN_KEY_DEPLOY_2_X)
+            destination[X_AXIS] = Z_PROBE_ALLEN_KEY_DEPLOY_3_X;
+          if (Z_PROBE_ALLEN_KEY_DEPLOY_3_Y != Z_PROBE_ALLEN_KEY_DEPLOY_2_Y)
+            destination[Y_AXIS] = Z_PROBE_ALLEN_KEY_DEPLOY_3_Y;
+          if (Z_PROBE_ALLEN_KEY_DEPLOY_3_Z != Z_PROBE_ALLEN_KEY_DEPLOY_2_Z)
+            destination[Z_AXIS] = Z_PROBE_ALLEN_KEY_DEPLOY_3_Z;
 
-            prepare_move_raw();
-          #endif
-        }
+          prepare_move_raw();
+        #endif
+      }
 
       // Partially Home X,Y for safety
       destination[X_AXIS] = destination[X_AXIS] * 0.75;
@@ -2270,6 +2272,13 @@ inline void gcode_G0_G1() {
           return;
         }
       }
+	  
+	  //Check if the destionation is off the build plane
+	  if(destination[Y_AXIS] > Y_MAX_BED_POS && destination[Z_AXIS] < home_offset[Z_AXIS] && relative_mode==false)
+	  {
+		//Raise the Z Axis by the z_axis home amount so the wiping will not be to low
+		destination[Z_AXIS] += home_offset[Z_AXIS];
+	  }
 
     #endif //FWRETRACT
 
@@ -2375,7 +2384,17 @@ inline void gcode_G28() {
 
   // For auto bed leveling, clear the level matrix
   #if ENABLED(AUTO_BED_LEVELING_FEATURE)
-    plan_bed_level_matrix.set_to_identity();
+	#if ENABLED(SAVE_G29_CORRECTION_MATRIX)
+		matrix_3x3 temp_plan_bed_level_matrix = plan_bed_level_matrix;
+		
+		if (marlin_debug_flags & DEBUG_LEVELING) 
+		{  
+			temp_plan_bed_level_matrix.debug("\nSaved Bed Level Correction Matrix:");
+		}
+		
+	#endif
+	plan_bed_level_matrix.set_to_identity();
+	
     #if ENABLED(DELTA)
       reset_bed_level();
     #endif
@@ -2428,11 +2447,38 @@ inline void gcode_G28() {
 
     bool  homeX = code_seen(axis_codes[X_AXIS]),
           homeY = code_seen(axis_codes[Y_AXIS]),
-          homeZ = code_seen(axis_codes[Z_AXIS]);
+	#if ENABLED(G28_AUTOSET_Z_HOME_OFFSET)
+		  setZhomeOffset = code_seen('P'),
+	#endif
+		  homeZ = code_seen(axis_codes[Z_AXIS]);
 
-    home_all_axis = (!homeX && !homeY && !homeZ) || (homeX && homeY && homeZ);
+    home_all_axis = (!homeX && !homeY && !homeZ && !setZhomeOffset) || (homeX && homeY && homeZ);
+	
+	//If we don't know our current location / home Z first
+	if(axis_known_position[Z_AXIS] == false)
+	{
+		homeZ = true;
+	}
+	else if(current_position[Z_AXIS] < 10)
+	{
+		//Position the Z axis if it is below 10
+		destination[Z_AXIS] = 10;
+		feedrate = max_feedrate[Z_AXIS] * 60;
+		line_to_destination();
+        st_synchronize();
+	}
+	
+	#if ENABLED(G28_AUTOSET_Z_HOME_OFFSET)
+	if(setZhomeOffset)
+	{
+		home_offset[Z_AXIS] = 0;
+		home_all_axis = true;	//Home all axis's to get the best Z home offset calculation
+	}
+	#endif
 
-    #if Z_HOME_DIR > 0  // If homing away from BED do Z first
+    if (home_all_axis || homeZ) {
+
+      #if Z_HOME_DIR > 0  // If homing away from BED do Z first
 
       if (home_all_axis || homeZ) {
         HOMEAXIS(Z);
@@ -2465,7 +2511,7 @@ inline void gcode_G28() {
         // by MIN_Z_HEIGHT_FOR_HOMING.
         current_position[Z_AXIS] = destination[Z_AXIS];
       }
-    #endif
+      #endif
 
     #if ENABLED(QUICK_HOME)
 
@@ -2664,7 +2710,55 @@ inline void gcode_G28() {
     #endif // Z_HOME_DIR < 0
 
     sync_plan_position();
+	
+	#if ENABLED(G28_AUTOSET_Z_HOME_OFFSET)
+		if (setZhomeOffset)
+		{
+			if (marlin_debug_flags & DEBUG_LEVELING) {
+				SERIAL_ECHOPAIR("Z Probe Started at: ", (float)st_get_position_mm(Z_AXIS));
+				SERIAL_EOL;
+			}
+		
+			float measured_z = probe_pt(LEFT_PROBE_BED_POSITION, FRONT_PROBE_BED_POSITION, Z_RAISE_BEFORE_PROBING, ProbeStay, 1);
+			
+			//Set Z offset
+			home_offset[Z_AXIS] = ((float)0.0) - measured_z - zprobe_zoffset;
+			
+			if (marlin_debug_flags & DEBUG_LEVELING) {
+				SERIAL_ECHOPAIR("Z Position Ended at: ", (float)measured_z);
+				SERIAL_EOL;
+				SERIAL_ECHOPAIR("Z Home offset set to: ", (float)home_offset[Z_AXIS]);
+				SERIAL_EOL;
+			}
+		}
+	#endif
+	
+	//Restore the leveling matrix
+    #if ENABLED(SAVE_G29_CORRECTION_MATRIX)
+		plan_bed_level_matrix = temp_plan_bed_level_matrix;
+		
+		if (marlin_debug_flags & DEBUG_LEVELING) 
+		{
+			plan_bed_level_matrix.debug("\nRestored Bed Level Correction Matrix:");
+		}
+		
+		vector_3 corrected_position = plan_get_position();
+        
+        current_position[X_AXIS] = corrected_position.x;
+        current_position[Y_AXIS] = corrected_position.y;
+        current_position[Z_AXIS] = corrected_position.z;
+		sync_plan_position();
+    #endif
 
+    //Set the z-level by using 1 point  
+    #if ENABLED(G28_AUTOSET_Z_HOME_OFFSET)
+		if (setZhomeOffset)
+		{
+			correctZHeight();
+		}
+    #endif
+
+	
   #endif // else DELTA
 
   #if ENABLED(SCARA)
@@ -2710,7 +2804,6 @@ inline void gcode_G28() {
       SERIAL_ECHOLNPGM("<<< gcode_G28");
     }
   #endif
-
   gcode_M114(); // Send end position to RepetierHost
 
 }
@@ -3258,12 +3351,40 @@ inline void gcode_G28() {
         plan_bed_level_matrix.debug(" \n\nBed Level Correction Matrix:");
 
       if (!dryrun) {
-        // Correct the Z height difference from Z probe position and nozzle tip position.
-        // The Z height on homing is measured by Z probe, but the Z probe is quite far from the nozzle.
-        // When the bed is uneven, this height must be corrected.
-        float x_tmp = current_position[X_AXIS] + X_PROBE_OFFSET_FROM_EXTRUDER,
-              y_tmp = current_position[Y_AXIS] + Y_PROBE_OFFSET_FROM_EXTRUDER,
-              z_tmp = current_position[Z_AXIS],
+        correctZHeight();
+      }
+
+      // Sled assembly for Cartesian bots
+      #if ENABLED(Z_PROBE_SLED)
+        dock_sled(true); // dock the sled
+      #endif
+
+    #endif // !DELTA
+
+    #ifdef Z_PROBE_END_SCRIPT
+      #if ENABLED(DEBUG_LEVELING_FEATURE)
+        if (marlin_debug_flags & DEBUG_LEVELING) {
+          SERIAL_ECHO("Z Probe End Script: ");
+          SERIAL_ECHOLNPGM(Z_PROBE_END_SCRIPT);
+        }
+      #endif
+      enqueuecommands_P(PSTR(Z_PROBE_END_SCRIPT));
+      st_synchronize();
+    #endif
+
+    #if ENABLED(DEBUG_LEVELING_FEATURE)
+      if (marlin_debug_flags & DEBUG_LEVELING) {
+        SERIAL_ECHOLNPGM("<<< gcode_G29");
+      }
+    #endif
+
+  }
+  
+  void correctZHeight()
+  {
+	  float x_tmp = current_position[X_AXIS] + X_PROBE_OFFSET_FROM_EXTRUDER,
+		  y_tmp = current_position[Y_AXIS] + Y_PROBE_OFFSET_FROM_EXTRUDER,
+		  z_tmp = current_position[Z_AXIS],
               real_z = st_get_axis_position_mm(Z_AXIS);  //get the real Z (since plan_get_position is now correcting the plane)
 
         #if ENABLED(DEBUG_LEVELING_FEATURE)
@@ -3313,7 +3434,7 @@ inline void gcode_G28() {
             print_xyz("> corrected Z in G29", current_position);
           }
         #endif
-      }
+  }
 
       // Sled assembly for Cartesian bots
       #if ENABLED(Z_PROBE_SLED)
@@ -3659,9 +3780,9 @@ inline void gcode_M42() {
     for (uint8_t i = 0; i < COUNT(sensitive_pins); i++)
       if (pin_number == sensitive_pins[i]) return;
 
-    pinMode(pin_number, OUTPUT);
-    digitalWrite(pin_number, pin_status);
-    analogWrite(pin_number, pin_status);
+      pinMode(pin_number, OUTPUT);
+      digitalWrite(pin_number, pin_status);
+      analogWrite(pin_number, pin_status);
 
     #if FAN_COUNT > 0
       switch (pin_number) {
@@ -3674,7 +3795,7 @@ inline void gcode_M42() {
         #if HAS_FAN2
           case FAN2_PIN: fanSpeeds[2] = pin_status; break;
         #endif
-      }
+    }
     #endif
 
   } // code_seen('S')
@@ -3750,9 +3871,9 @@ inline void gcode_M42() {
       X_probe_location = code_value();
       #if DISABLED(DELTA)
         if (X_probe_location < MIN_PROBE_X || X_probe_location > MAX_PROBE_X) {
-          out_of_range_error(PSTR("X"));
-          return;
-        }
+        out_of_range_error(PSTR("X"));
+        return;
+      }
       #endif
     }
 
@@ -3760,9 +3881,9 @@ inline void gcode_M42() {
       Y_probe_location = code_value();
       #if DISABLED(DELTA)
         if (Y_probe_location < MIN_PROBE_Y || Y_probe_location > MAX_PROBE_Y) {
-          out_of_range_error(PSTR("Y"));
-          return;
-        }
+        out_of_range_error(PSTR("Y"));
+        return;
+      }
       #endif
     }
 
@@ -3861,15 +3982,15 @@ inline void gcode_M42() {
           X_current = X_probe_location - X_PROBE_OFFSET_FROM_EXTRUDER + cos(RADIANS(angle)) * radius;
           Y_current = Y_probe_location - Y_PROBE_OFFSET_FROM_EXTRUDER + sin(RADIANS(angle)) * radius;
           #if DISABLED(DELTA)
-            X_current = constrain(X_current, X_MIN_POS, X_MAX_POS);
-            Y_current = constrain(Y_current, Y_MIN_POS, Y_MAX_POS);
+          X_current = constrain(X_current, X_MIN_POS, X_MAX_POS);
+          Y_current = constrain(Y_current, Y_MIN_POS, Y_MAX_POS);
           #else
             // If we have gone out too far, we can do a simple fix and scale the numbers
             // back in closer to the origin.
             while (sqrt(X_current * X_current + Y_current * Y_current) > DELTA_PROBEABLE_RADIUS) {
               X_current /= 1.25;
               Y_current /= 1.25;
-              if (verbose_level > 3) {
+          if (verbose_level > 3) {
                 SERIAL_ECHOPAIR("Pulling point towards center:", X_current);
                 SERIAL_ECHOPAIR(", ", Y_current);
                 SERIAL_EOL;
@@ -4204,8 +4325,8 @@ inline void gcode_M109() {
       millis_t now = millis();
       if (now > next_temp_ms) { //Print Temp Reading every 1 second while heating up.
         next_temp_ms = now + 1000UL;
-        print_heaterstates();
-        SERIAL_EOL;
+          print_heaterstates();
+          SERIAL_EOL;
       }
       idle();
       refresh_cmd_timeout(); // to prevent stepper_inactive_time from running out
@@ -4493,21 +4614,21 @@ inline void gcode_M114() {
   #if ENABLED(COREXY) || ENABLED(COREXZ)
     SERIAL_PROTOCOLPGM(MSG_COUNT_A);
   #else
-    SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+  SERIAL_PROTOCOLPGM(MSG_COUNT_X);
   #endif
   SERIAL_PROTOCOL(xpos);
 
   #if ENABLED(COREXY)
     SERIAL_PROTOCOLPGM(" B:");
   #else
-    SERIAL_PROTOCOLPGM(" Y:");
+  SERIAL_PROTOCOLPGM(" Y:");
   #endif
   SERIAL_PROTOCOL(ypos);
 
   #if ENABLED(COREXZ)
     SERIAL_PROTOCOLPGM(" C:");
   #else
-    SERIAL_PROTOCOLPGM(" Z:");
+  SERIAL_PROTOCOLPGM(" Z:");
   #endif
   SERIAL_PROTOCOL(zpos);
 
@@ -4977,13 +5098,13 @@ inline void gcode_M226() {
       }
     }
     else if (servo_index >= 0) {
-      SERIAL_ECHO_START;
-      SERIAL_ECHO(" Servo ");
-      SERIAL_ECHO(servo_index);
+        SERIAL_ECHO_START;
+        SERIAL_ECHO("Servo ");
+        SERIAL_ECHO(servo_index);
       SERIAL_ECHO(": ");
       SERIAL_ECHOLN(servo[servo_index].read());
+      }
     }
-  }
 
 #endif // HAS_SERVOS
 
@@ -5155,7 +5276,7 @@ inline void gcode_M303() {
 
   float temp = code_seen('S') ? code_value() : (e < 0 ? 70.0 : 150.0);
 
-  if (e >= 0 && e < EXTRUDERS)
+  if (e >=0 && e < EXTRUDERS)
     target_extruder = e;
 
   KEEPALIVE_STATE(NOT_BUSY); // don't send "busy: processing" messages during autotune output
@@ -5748,7 +5869,7 @@ inline void gcode_M907() {
     if (code_seen('S')) {
       float dac_percent = code_value();
       for (uint8_t i = 0; i <= 4; i++) dac_current_percent(i, dac_percent);
-    }
+}
     for (uint8_t i = 0; i < NUM_AXIS; i++) if (code_seen(axis_codes[i])) dac_current_percent(i, code_value());
   #endif
 }
@@ -5760,10 +5881,10 @@ inline void gcode_M907() {
    */
   inline void gcode_M908() {
     #if HAS_DIGIPOTSS
-      digitalPotWrite(
-        code_seen('P') ? code_value() : 0,
-        code_seen('S') ? code_value() : 0
-      );
+    digitalPotWrite(
+      code_seen('P') ? code_value() : 0,
+      code_seen('S') ? code_value() : 0
+    );
     #endif
     #ifdef DAC_STEPPER_CURRENT
       dac_current_raw(
@@ -5911,9 +6032,9 @@ inline void gcode_T(uint8_t tmp_extruder) {
             current_position[Y_AXIS] += offset_vec.y;
             current_position[Z_AXIS] += offset_vec.z;
           #else // !AUTO_BED_LEVELING_FEATURE
-            // Offset extruder (only by XY)
-            for (int i=X_AXIS; i<=Y_AXIS; i++)
-              current_position[i] += extruder_offset[i][tmp_extruder] - extruder_offset[i][active_extruder];
+          // Offset extruder (only by XY)
+          for (int i = X_AXIS; i <= Y_AXIS; i++)
+            current_position[i] += extruder_offset[i][tmp_extruder] - extruder_offset[i][active_extruder];
           #endif // !AUTO_BED_LEVELING_FEATURE
           // Set the new active extruder and position
           active_extruder = tmp_extruder;
