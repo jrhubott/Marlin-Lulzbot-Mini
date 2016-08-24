@@ -36,7 +36,7 @@
  *
  */
 
-#define EEPROM_VERSION "V23"
+#define EEPROM_VERSION "V24"
 
 /**
  * V23 EEPROM Layout:
@@ -66,6 +66,7 @@
  *
  * AUTO BED LEVELING
  *  243  M851      zprobe_zoffset (float)
+ *       G29       plan_bed_level_matrix
  *
  * DELTA:
  *  247  M666 XYZ  endstop_adj (float x3)
@@ -213,6 +214,9 @@ void Config_StoreSettings()  {
     float zprobe_zoffset = 0;
   #endif
   EEPROM_WRITE_VAR(i, zprobe_zoffset);
+  #ifdef SAVE_G29_CORRECTION_MATRIX
+  	EEPROM_WRITE_VAR(i,plan_bed_level_matrix);
+  #endif
 
   #if ENABLED(DELTA)
     EEPROM_WRITE_VAR(i, endstop_adj);               // 3 floats
@@ -392,7 +396,9 @@ void Config_RetrieveSettings() {
       float zprobe_zoffset = 0;
     #endif
     EEPROM_READ_VAR(i, zprobe_zoffset);
-
+	#ifdef SAVE_G29_CORRECTION_MATRIX
+        EEPROM_READ_VAR(i,plan_bed_level_matrix);
+	#endif
     #if ENABLED(DELTA)
       EEPROM_READ_VAR(i, endstop_adj);                // 3 floats
       EEPROM_READ_VAR(i, delta_radius);               // 1 float
@@ -558,6 +564,10 @@ void Config_ResetDefault() {
 
   #if ENABLED(AUTO_BED_LEVELING_FEATURE)
     zprobe_zoffset = Z_PROBE_OFFSET_FROM_EXTRUDER;
+  #endif
+  
+  #ifdef SAVE_G29_CORRECTION_MATRIX
+    plan_bed_level_matrix.set_to_identity();
   #endif
 
   #if ENABLED(DELTA)
@@ -943,6 +953,11 @@ void Config_PrintSettings(bool forReplay) {
       }
     #endif
     SERIAL_EOL;
+	#ifdef SAVE_G29_CORRECTION_MATRIX
+		SERIAL_ECHO_START;
+		plan_bed_level_matrix.debug("\n\nBed Level Correction Matrix:");
+		SERIAL_EOL;
+	#endif
   #endif
 }
 
