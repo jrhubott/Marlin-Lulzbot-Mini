@@ -46,10 +46,6 @@ before_script:
   #cat the configuraion to the log
   - cat Marlin/Configuration.h
 script:
-  # Abort on style errors
-  # if [ "0" != `find . -name "*.orig" | wc -l` ] ; then echo "Improperly styled source -- run astyle" ; exit -999; fi
-  # Relaxed Travis check
-  # if [ "0" != `find . -name "*.orig" | wc -l` ] ; then echo "Improperly styled source -- run astyle" ; fi
   # build default config - Lulzbot Mini
   - DISPLAY=:1.0 ~/bin/arduino --pref build.path=$TRAVIS_BUILD_DIR/build --verify --board marlin:avr:mega:cpu=atmega2560  Marlin/Marlin.ino
   - cp build/Marlin.cpp.hex "build/Marlin.Mini-$TRAVIS_TAG.hex"
