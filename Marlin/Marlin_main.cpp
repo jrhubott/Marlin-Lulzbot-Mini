@@ -511,6 +511,7 @@ void serial_echopair_P(const char* s_P, float v)         { serialprintPGM(s_P); 
 void serial_echopair_P(const char* s_P, double v)        { serialprintPGM(s_P); SERIAL_ECHO(v); }
 void serial_echopair_P(const char* s_P, unsigned long v) { serialprintPGM(s_P); SERIAL_ECHO(v); }
 
+void correctZHeight();
 static void report_current_position();
 
 #if ENABLED(DEBUG_LEVELING_FEATURE)
@@ -2561,6 +2562,13 @@ inline void gcode_G0_G1() {
 
     #endif //FWRETRACT
 
+	//Check if the destionation is off the build plane
+	if(destination[Y_AXIS] > Y_MAX_BED_POS && destination[Z_AXIS] < home_offset[Z_AXIS] && relative_mode==false)
+	{
+		//Raise the Z Axis by the z_axis home amount so the wiping will not be to low
+		destination[Z_AXIS] += home_offset[Z_AXIS];
+	}
+	
     prepare_move();
   }
 }
@@ -2669,9 +2677,18 @@ inline void gcode_G28() {
 
   // Wait for planner moves to finish!
   st_synchronize();
-
+  
   // For auto bed leveling, clear the level matrix
   #if ENABLED(AUTO_BED_LEVELING_FEATURE)
+    #if ENABLED(SAVE_G29_CORRECTION_MATRIX)
+		matrix_3x3 temp_plan_bed_level_matrix = plan_bed_level_matrix;
+		
+		if (marlin_debug_flags & DEBUG_LEVELING) 
+		{  
+			temp_plan_bed_level_matrix.debug("\nSaved Bed Level Correction Matrix:");
+		}
+		
+	#endif
     plan_bed_level_matrix.set_to_identity();
     #if ENABLED(DELTA)
       reset_bed_level();
@@ -2732,9 +2749,34 @@ inline void gcode_G28() {
 
     bool  homeX = code_seen(axis_codes[X_AXIS]),
           homeY = code_seen(axis_codes[Y_AXIS]),
+		  if ENABLED(G28_AUTOSET_Z_HOME_OFFSET)
+		  setZhomeOffset = code_seen('P'),
+		  #endif
           homeZ = code_seen(axis_codes[Z_AXIS]);
 
     home_all_axis = (!homeX && !homeY && !homeZ) || (homeX && homeY && homeZ);
+	
+	//If we don't know our current location / home Z first
+	if(axis_known_position[Z_AXIS] == false)
+	{
+		homeZ = true;
+	}
+	else if(current_position[Z_AXIS] < 10)
+	{
+		//Position the Z axis if it is below 10
+		destination[Z_AXIS] = 10;
+		feedrate = max_feedrate[Z_AXIS] * 60;
+		line_to_destination();
+        st_synchronize();
+	}
+	
+	#if ENABLED(G28_AUTOSET_Z_HOME_OFFSET)
+	if(setZhomeOffset)
+	{
+		home_offset[Z_AXIS] = 0;
+		home_all_axis = true;	//Home all axis's to get the best Z home offset calculation
+	}
+	#endif
 
     #if Z_HOME_DIR > 0  // If homing away from BED do Z first
 
@@ -2966,6 +3008,53 @@ inline void gcode_G28() {
     #endif // Z_HOME_DIR < 0
 
     sync_plan_position();
+	
+	#if ENABLED(G28_AUTOSET_Z_HOME_OFFSET)
+		if (setZhomeOffset)
+		{
+			if (marlin_debug_flags & DEBUG_LEVELING) {
+				SERIAL_ECHOPAIR("Z Probe Started at: ", (float)st_get_position_mm(Z_AXIS));
+				SERIAL_EOL;
+			}
+		
+			float measured_z = probe_pt(LEFT_PROBE_BED_POSITION, FRONT_PROBE_BED_POSITION, Z_RAISE_BEFORE_PROBING, ProbeStay, 1);
+			
+			//Set Z offset
+			home_offset[Z_AXIS] = ((float)0.0) - measured_z - zprobe_zoffset;
+			
+			if (marlin_debug_flags & DEBUG_LEVELING) {
+				SERIAL_ECHOPAIR("Z Position Ended at: ", (float)measured_z);
+				SERIAL_EOL;
+				SERIAL_ECHOPAIR("Z Home offset set to: ", (float)home_offset[Z_AXIS]);
+				SERIAL_EOL;
+			}
+		}
+	#endif
+	
+	//Restore the leveling matrix
+    #if ENABLED(SAVE_G29_CORRECTION_MATRIX)
+		plan_bed_level_matrix = temp_plan_bed_level_matrix;
+		
+		if (marlin_debug_flags & DEBUG_LEVELING) 
+		{
+			plan_bed_level_matrix.debug("\nRestored Bed Level Correction Matrix:");
+		}
+		
+		vector_3 corrected_position = plan_get_position();
+        
+        current_position[X_AXIS] = corrected_position.x;
+        current_position[Y_AXIS] = corrected_position.y;
+        current_position[Z_AXIS] = corrected_position.z;
+		sync_plan_position();
+    #endif
+
+    //Set the z-level by using 1 point  
+    #if ENABLED(G28_AUTOSET_Z_HOME_OFFSET)
+		if (setZhomeOffset)
+		{
+			correctZHeight();
+		}
+    #endif
 
   #endif // else DELTA
 
@@ -3686,6 +3775,50 @@ inline void gcode_G28() {
         plan_bed_level_matrix.debug(" \n\nBed Level Correction Matrix:");
 
       if (!dryrun) {
+		correctZHeight();
+		}
+		
+	  // Sled assembly for Cartesian bots
+      #if ENABLED(Z_PROBE_SLED)
+        dock_sled(true); // dock the sled
+      #elif Z_RAISE_AFTER_PROBING > 0
+        // Raise Z axis for non-delta and non servo based probes
+        #if !defined(HAS_SERVO_ENDSTOPS) && DISABLED(Z_PROBE_ALLEN_KEY) && DISABLED(Z_PROBE_SLED)
+          raise_z_after_probing();
+        #endif
+      #endif
+
+    #endif // !DELTA
+
+    #ifdef Z_PROBE_END_SCRIPT
+      #if ENABLED(DEBUG_LEVELING_FEATURE)
+        if (DEBUGGING(LEVELING)) {
+          SERIAL_ECHO("Z Probe End Script: ");
+          SERIAL_ECHOLNPGM(Z_PROBE_END_SCRIPT);
+        }
+      #endif
+      enqueue_and_echo_commands_P(PSTR(Z_PROBE_END_SCRIPT));
+      #if ENABLED(HAS_Z_MIN_PROBE)
+        z_probe_is_active = false;
+      #endif
+      st_synchronize();
+    #endif
+
+    KEEPALIVE_STATE(IN_HANDLER);
+
+    #if ENABLED(DEBUG_LEVELING_FEATURE)
+      if (DEBUGGING(LEVELING)) {
+        SERIAL_ECHOLNPGM("<<< gcode_G29");
+      }
+    #endif
+
+    report_current_position();
+
+    SET_OUTPUT(Z_MIN_PIN);
+    WRITE(Z_MIN_PIN, LOW); //Disable Z_PROBE when not in use
+  }
+   
+   void correctZHeight(){
         /**
          * Correct the Z height difference from Z probe position and nozzle tip position.
          * The Z height on homing is measured by Z probe, but the Z probe is quite far
@@ -3750,45 +3883,7 @@ inline void gcode_G28() {
         #endif
       }
 
-      // Sled assembly for Cartesian bots
-      #if ENABLED(Z_PROBE_SLED)
-        dock_sled(true); // dock the sled
-      #elif Z_RAISE_AFTER_PROBING > 0
-        // Raise Z axis for non-delta and non servo based probes
-        #if !defined(HAS_SERVO_ENDSTOPS) && DISABLED(Z_PROBE_ALLEN_KEY) && DISABLED(Z_PROBE_SLED)
-          raise_z_after_probing();
-        #endif
-      #endif
-
-    #endif // !DELTA
-
-    #ifdef Z_PROBE_END_SCRIPT
-      #if ENABLED(DEBUG_LEVELING_FEATURE)
-        if (DEBUGGING(LEVELING)) {
-          SERIAL_ECHO("Z Probe End Script: ");
-          SERIAL_ECHOLNPGM(Z_PROBE_END_SCRIPT);
-        }
-      #endif
-      enqueue_and_echo_commands_P(PSTR(Z_PROBE_END_SCRIPT));
-      #if ENABLED(HAS_Z_MIN_PROBE)
-        z_probe_is_active = false;
-      #endif
-      st_synchronize();
-    #endif
-
-    KEEPALIVE_STATE(IN_HANDLER);
-
-    #if ENABLED(DEBUG_LEVELING_FEATURE)
-      if (DEBUGGING(LEVELING)) {
-        SERIAL_ECHOLNPGM("<<< gcode_G29");
-      }
-    #endif
-
-    report_current_position();
-
-    SET_OUTPUT(Z_MIN_PIN);
-    WRITE(Z_MIN_PIN, LOW); //Disable Z_PROBE when not in use
-  }
+      
 
   #if DISABLED(Z_PROBE_SLED) // could be avoided
 
