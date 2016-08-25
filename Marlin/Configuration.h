@@ -540,7 +540,7 @@ const bool Z_MIN_PROBE_ENDSTOP_INVERTING = true; // set to true to invert the lo
 // @section bedlevel
 
 #define AUTO_BED_LEVELING_FEATURE // Delete the comment to enable (remove // at the start of the line)
-//#define DEBUG_LEVELING_FEATURE
+#define DEBUG_LEVELING_FEATURE
 #define Z_MIN_PROBE_REPEATABILITY_TEST  // If not commented out, Z Probe Repeatability test will be included if Auto Bed Leveling is Enabled.
 #define SAVE_G29_CORRECTION_MATRIX  // if not commented out and the EEPROM is used to save settings, the G29 information will also be saved.
 #define G28_AUTOSET_Z_HOME_OFFSET		// Add the P code to the G28 command to set the home z offset automatically using the leveling feature
@@ -731,7 +731,7 @@ const bool Z_MIN_PROBE_ENDSTOP_INVERTING = true; // set to true to invert the lo
 #if ENABLED(CUSTOM_M_CODES)
   #if ENABLED(AUTO_BED_LEVELING_FEATURE)
     #define CUSTOM_M_CODE_SET_Z_PROBE_OFFSET 851
-    #define Z_PROBE_OFFSET_RANGE_MIN -2
+    #define Z_PROBE_OFFSET_RANGE_MIN -5
     #define Z_PROBE_OFFSET_RANGE_MAX 5
   #endif
 #endif
