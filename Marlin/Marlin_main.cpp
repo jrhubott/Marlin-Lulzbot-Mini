@@ -2562,12 +2562,6 @@ inline void gcode_G0_G1() {
 
     #endif //FWRETRACT
 
-	//Check if the destionation is off the build plane
-	if(destination[Y_AXIS] > Y_MAX_BED_POS && destination[Z_AXIS] < home_offset[Z_AXIS] && relative_mode==false)
-	{
-		//Raise the Z Axis by the z_axis home amount so the wiping will not be to low
-		destination[Z_AXIS] += home_offset[Z_AXIS];
-	}
 	
     prepare_move();
   }
@@ -2749,7 +2743,7 @@ inline void gcode_G28() {
 
     bool  homeX = code_seen(axis_codes[X_AXIS]),
           homeY = code_seen(axis_codes[Y_AXIS]),
-		  if ENABLED(G28_AUTOSET_Z_HOME_OFFSET)
+		  #if ENABLED(G28_AUTOSET_Z_HOME_OFFSET)
 		  setZhomeOffset = code_seen('P'),
 		  #endif
           homeZ = code_seen(axis_codes[Z_AXIS]);
@@ -2769,7 +2763,7 @@ inline void gcode_G28() {
 		line_to_destination();
         st_synchronize();
 	}
-	
+
 	#if ENABLED(G28_AUTOSET_Z_HOME_OFFSET)
 	if(setZhomeOffset)
 	{
@@ -3046,15 +3040,15 @@ inline void gcode_G28() {
         current_position[Y_AXIS] = corrected_position.y;
         current_position[Z_AXIS] = corrected_position.z;
 		sync_plan_position();
-    #endif
+        #endif
 
-    //Set the z-level by using 1 point  
-    #if ENABLED(G28_AUTOSET_Z_HOME_OFFSET)
+         //Set the z-level by using 1 point  
+       #if ENABLED(G28_AUTOSET_Z_HOME_OFFSET)
 		if (setZhomeOffset)
 		{
 			correctZHeight();
 		}
-    #endif
+        #endif
 
   #endif // else DELTA
 
